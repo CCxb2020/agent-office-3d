@@ -129,7 +129,7 @@ function plan(data, compact = false, dormN = 0, confN = 1) {
 
   // Mesas só para quem está trabalhando agora, agrupadas por máquina (ilhas).
   // Ociosos ficam na copa; assim não sobra um mar de mesas vazias.
-  const rooms = [planRoom({ name: "Trabalhando agora", online: true }, data.agents.filter((a) => a.state === "working"))];
+  const rooms = [planRoom({ name: "正在工作", online: true }, data.agents.filter((a) => a.state === "working"))];
   const work = { w: 0, d: 0 }; // a área de trabalho agora fica na fileira das salas
 
   // A copa comporta todos os agentes, então não muda de tamanho quando
@@ -338,9 +338,9 @@ const floorMat = (kind, w, d, scale = 4) => new THREE.MeshStandardMaterial({ map
  * "classico" é o visual original; "minimal" esconde a cidade (mais leve).
  */
 export const THEMES = {
-  premium: { label: "🌴 Cobertura premium", deck: "stone", work: "slate", workOff: "slate", copa: "teak", reception: "marble", conf: "teak", pend: "wine", off: "midnight", dorm: "midnight", lush: true, city: true },
-  classico: { label: "🏙️ Orla clássica", deck: "tile", work: "blue", workOff: "gray", copa: "wood", reception: "tile", conf: "wood", pend: "red", off: "navy", dorm: "navy", lush: false, city: true },
-  minimal: { label: "⚪ Minimalista (leve)", deck: "tile", work: "slate", workOff: "slate", copa: "wood", reception: "marble", conf: "wood", pend: "red", off: "navy", dorm: "navy", lush: false, city: false },
+  premium: { label: "🌴 屋顶全景", deck: "stone", work: "slate", workOff: "slate", copa: "teak", reception: "marble", conf: "teak", pend: "wine", off: "midnight", dorm: "midnight", lush: true, city: true },
+  classico: { label: "🏙️ 经典海滨", deck: "tile", work: "blue", workOff: "gray", copa: "wood", reception: "tile", conf: "wood", pend: "red", off: "navy", dorm: "navy", lush: false, city: true },
+  minimal: { label: "⚪ 简洁模式", deck: "tile", work: "slate", workOff: "slate", copa: "wood", reception: "marble", conf: "wood", pend: "red", off: "navy", dorm: "navy", lush: false, city: false },
 };
 let THEME = THEMES.premium;
 
@@ -544,8 +544,8 @@ function workBubble(a) {
     : one
       ? `<span class="wl one"><i ${workAttrs(one, a.id, esc)}>${one.issue ? `${esc(one.issue.project ? `${one.issue.project} · ` : "")}${esc(one.issue.title)}` : esc(workTitle(one))}</i>${one.now ? `<i class="now">✍️ ${esc(one.now)}</i>` : ""}</span>`
       : "";
-  return `<div class="bubble ${multi ? "multi" : ""}"><b><i class="be">${esc(a.emoji)}</i>${esc(a.name)}${sum.n > 1 ? `<span class="mult" title="${sum.n} execuções ao mesmo tempo">×${sum.n}</span>` : ""}</b>` +
-    `<span class="pc">💻 ${esc(a.machine)}${multi ? ` · ${esc(sum.text)}` : one?.issue ? ` · ${esc(one.issue.identifier)}` : one?.kind === "chat" ? " · 💬 chat" : ""}${a.today?.runs ? ` · ⚡${a.today.runs} hoje` : ""}</span>${list}</div>`;
+  return `<div class="bubble ${multi ? "multi" : ""}"><b><i class="be">${esc(a.emoji)}</i>${esc(a.name)}${sum.n > 1 ? `<span class="mult" title="${sum.n} 个任务同时运行">×${sum.n}</span>` : ""}</b>` +
+    `<span class="pc">💻 ${esc(a.machine)}${multi ? ` · ${esc(sum.text)}` : one?.issue ? ` · ${esc(one.issue.identifier)}` : one?.kind === "chat" ? " · 💬 chat" : ""}${a.today?.runs ? ` · ⚡${a.today.runs} 今天` : ""}</span>${list}</div>`;
 }
 
 /** "⚡3 hoje · 👀1" para o rótulo de quem já trabalhou hoje. */
@@ -609,9 +609,9 @@ function walkPose(av, t, seed) {
 
 // ---------------- Cena ----------------
 
-const UNIFIED = "Escritório único";
+const UNIFIED = "合并办公室";
 const ANNEX_GAP = 26; // distância entre a torre e a Central de Agendamentos
-const POD = 4.6; // espaço de cada quiosque de tarefa agendada
+const POD = 4.6; // espaço de cada quiosque de 定时任务
 
 export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedule = () => {}, onSpot = () => {}, onBoard = () => {}, onConf = () => {} }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -681,7 +681,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
   let sites = []; // um por prédio: { key, name, p, ox, oz, group, tower }
   let campus = { mode: "sede", key: null, groupBy: "machine" }; // sede | bairro | um
   let bounds = { x0: -40, x1: 40, z0: -30, z1: 30 };
-  let focusKey = null; // prédio em foco na vista "Escritório" do bairro
+  let focusKey = null; // prédio em foco na vista "办公室" do bairro
   let boards = [];
   let confBoards = []; // telões das salas de reunião // painéis de tarefas agendadas (recepção e área de trabalho)
   let schedules = [];
@@ -792,7 +792,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     const trim = mat(0x0b3d5c);
     // Letreiro com brilho próprio (emissiveMap = a arte), legível de dia e de noite.
     const brandSign = (w, h) => {
-      const tex = signTexture(name ? [name.length > 18 ? `${name.slice(0, 17)}…` : name, `${count} agente${count === 1 ? "" : "s"} · Agent Office`] : ["Agent Office", "Escritório de Agentes"]);
+      const tex = signTexture(name ? [name.length > 18 ? `${name.slice(0, 17)}…` : name, `${count} agente${count === 1 ? "" : "s"} · Agent Office`] : ["Agent Office", "智能体办公室"]);
       return new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.4), [
         trim, trim, trim, trim,
         new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.55 }),
@@ -906,7 +906,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
       const half = (r.w - 2.2) / 2;
       g.add(at(box(half, 2.4, 0.08, gm, { cast: false }), half / 2, 1.3, r.d));
       g.add(at(box(half, 2.4, 0.08, gm, { cast: false }), r.w - half / 2, 1.3, r.d));
-      g.add(label(`💻 Trabalhando agora · <span data-zone="working">0</span>`, "room-label work", r.w / 2, 0.3, r.d + 0.3));
+      g.add(label(`💻 正在工作 · <span data-zone="working">0</span>`, "room-label work", r.w / 2, 0.3, r.d + 0.3));
       // Telão das tarefas agendadas na parede do fundo, de frente para as bancadas.
       if (main) {
         const b = makeBoard(Math.min(10.5, r.len - 1), 4.5);
@@ -957,8 +957,8 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     // Copa: cantos de conversa alternando sofás e mesas altas.
     // Copa (quem ainda não trabalhou hoje) e Descanso (quem já voltou de alguma tarefa hoje).
     for (const [L, title, cls, colors] of [
-      [p.lounge, `☕ Copa · ainda não trabalharam hoje (<span data-zone="fresh">0</span>)`, "", [0x3f6e8c, 0x8c5a3f]],
-      [p.rest, `🛋️ Descanso · já trabalharam hoje (<span data-zone="rest">0</span>)<span data-zone="review" data-prefix=" · 👀 " data-suffix=" em revisão"></span>`, "rest", [0x6d5a8c, 0x4f7a6a]],
+      [p.lounge, `☕ 茶水间 · 今日尚未工作 (<span data-zone="fresh">0</span>)`, "", [0x3f6e8c, 0x8c5a3f]],
+      [p.rest, `🛋️ 休息区 · 今日已工作 (<span data-zone="rest">0</span>)<span data-zone="review" data-prefix=" · 👀 " data-suffix=" 待审核"></span>`, "rest", [0x6d5a8c, 0x4f7a6a]],
     ]) {
       const lg = add(new THREE.Group());
       lg.position.set(L.x, 0, L.z);
@@ -1025,7 +1025,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     }
     rg.add(at(plant(1.4), 1, 0.1, 1), at(plant(1.4), R.w - 1, 0.1, 1));
     rg.add(at(sofa(0x9e9e9e), 2.2, 0.1, R.d - 2.2));
-    rg.add(label("🛎️ Recepção", "zone-label", R.w / 2, 0.3, R.d + 0.3));
+    rg.add(label("🛎️ 接待区", "zone-label", R.w / 2, 0.3, R.d + 0.3));
 
     // Sala de pendências (bloqueados) em volta da mesa.
     // Sala de reunião: mesa oval de madeira, cadeiras em volta e telão com a pauta.
@@ -1056,7 +1056,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
       C.board.mesh.userData.isBoard = false;
       C.board.mesh.userData.isConf = true;
       confBoards.push(C.board);
-      cg.add(label(`🤝 Sala de reunião${p.confs.length > 1 ? ` ${ci + 1}` : ""}`, "zone-label conf", C.w / 2, 0.3, C.d + 0.3));
+      cg.add(label(`🤝 会议室${p.confs.length > 1 ? ` ${ci + 1}` : ""}`, "zone-label conf", C.w / 2, 0.3, C.d + 0.3));
       const W0 = (x, z) => new THREE.Vector3(ox - p.W / 2 + C.x + x, ELEV + 0.1, oz - p.D / 2 + C.z + z);
       const confEntry = [W0(C.w / 2, C.d + 0.8), W0(C.w / 2, C.d - 0.6)];
       C.spots = [];
@@ -1083,7 +1083,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     mg.add(at(box(tableLen, 0.1, 2, mat(0x4e342e)), M.w / 2, 1.0, M.d / 2));
     mg.add(at(box(tableLen * 0.8, 0.95, 0.3, mat(0x3e2723)), M.w / 2, 0.5, M.d / 2));
     mg.add(at(box(3.5, 2, 0.1, mat(0xffffff, { emissive: 0x330000, emissiveIntensity: 0.4 })), M.w / 2, 2.2, 0.2)); // quadro
-    mg.add(label(`🚧 Pendências · bloqueados (<span data-zone="blocked">0</span>)`, "zone-label blocked", M.w / 2, 0.3, M.d + 0.3));
+    mg.add(label(`🚧 等待区 · bloqueados (<span data-zone="blocked">0</span>)`, "zone-label blocked", M.w / 2, 0.3, M.d + 0.3));
     M.spots = [];
     for (let i = 0; i < M.cap; i++) {
       const side = i % 2 ? 1 : -1;
@@ -1096,7 +1096,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     const sg = add(new THREE.Group());
     sg.position.set(S.x, 0, S.z);
     sg.add(at(box(S.w, 0.06, S.d, floorMat(THEME.off, S.w, S.d), { cast: false }), S.w / 2, 0.13, S.d / 2));
-    sg.add(label(`💤 Desligados · máquina offline (<span data-zone="offline">0</span>)`, "zone-label offline", S.w / 2, 0.3, S.d + 0.3));
+    sg.add(label(`💤 机器离线 (<span data-zone="offline">0</span>)`, "zone-label offline", S.w / 2, 0.3, S.d + 0.3));
     S.spots = [];
     for (let i = 0; i < S.cap; i++) {
       const x = 1.6 + (i % S.cols) * 1.8, z = 1.6 + Math.floor(i / S.cols) * 1.8;
@@ -1117,8 +1117,8 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
       for (const [w, d, x, z] of [[Dm.w, 0.08, Dm.w / 2, 0], [0.08, Dm.d, 0, Dm.d / 2], [0.08, Dm.d, Dm.w, Dm.d / 2]]) dg.add(at(box(w, 2.4, d, gm, { cast: false }), x, 1.3, z));
       // luz noturna (abajur azul) e tapete
       dg.add(at(kit("rugRectangle", Dm.w - 1.5) ?? new THREE.Group(), Dm.w / 2, 0.14, Dm.d / 2));
-      const dl = label(`😴 Dormitório · tarefas agendadas (${Dm.n})`, "zone-label dorm", Dm.w / 2, 0.3, Dm.d + 0.3);
-      dl.element.title = "Aproximar do dormitório";
+      const dl = label(`😴 休息室 · tarefas agendadas (${Dm.n})`, "zone-label dorm", Dm.w / 2, 0.3, Dm.d + 0.3);
+      dl.element.title = "查看休息室";
       dl.element.addEventListener("click", () => focusDorm());
       dg.add(dl);
       dormCenter = new THREE.Vector3(ox - p.W / 2 + Dm.x + Dm.w / 2, ELEV, oz - p.D / 2 + Dm.z + Dm.d / 2);
@@ -1171,7 +1171,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     // Nome do prédio sobre a fachada, visível de dentro também.
     if (name) {
       const bl = label(`🏢 ${esc(name)} · ${count} agente${count === 1 ? "" : "s"}`, "zone-label building", p.W / 2, WALL_H + 1.5, p.D + 0.6);
-      bl.element.title = "Entrar neste prédio";
+      bl.element.title = "进入这栋楼";
       bl.element.addEventListener("click", () => {
         const key = site && sites.find((s) => s.name === name)?.key;
         if (key) {
@@ -1226,15 +1226,15 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     x.font = "22px system-ui, sans-serif";
     x.fillText((agent?.name ?? "—").slice(0, 40), 22, 150);
     const next = s.status === "active" && s.nextRunAt
-      ? new Date(s.nextRunAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-      : "pausada";
+      ? new Date(s.nextRunAt).toLocaleString("zh-CN", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+      : "已暂停";
     x.fillStyle = podColor(s);
     x.font = "bold 30px ui-monospace, monospace";
-    x.fillText(s.status === "active" ? `⏰ ${next}` : "⏸ pausada", 22, 200);
+    x.fillText(s.status === "active" ? `⏰ ${next}` : "⏸ 已暂停", 22, 200);
     if (s.lastRun) {
       x.fillStyle = s.lastRun.status === "failed" && !s.lastRun.acked ? "#ff8a80" : "#7ee2a8";
       x.font = "20px system-ui, sans-serif";
-      x.fillText(`última: ${s.lastRun.status === "failed" ? (s.lastRun.acked ? "falhou (arquivada)" : "falhou") : s.lastRun.status === "completed" ? "ok" : s.lastRun.status}`, 22, 236);
+      x.fillText(`上次: ${s.lastRun.status === "failed" ? (s.lastRun.acked ? "失败（已归档）" : "失败") : s.lastRun.status === "completed" ? "ok" : s.lastRun.status}`, 22, 236);
     }
     pod.tex.needsUpdate = true;
   }
@@ -1313,7 +1313,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     const roof = new THREE.Group();
     roof.userData.annex = true;
     roof.add(at(box(w + 1.2, 0.5, d + 1.2, mat(0x9aa3ad)), w / 2, floorY + WALL_H + 0.25, d / 2));
-    const signTex = signTexture(["⏰ Central", "Tarefas agendadas"]);
+    const signTex = signTexture(["⏰ Central", "定时任务"]);
     roof.add(at(new THREE.Mesh(new THREE.BoxGeometry(Math.min(w - 2, 18), 4, 0.4), [trim, trim, trim, trim,
       new THREE.MeshStandardMaterial({ map: signTex, emissiveMap: signTex, emissive: 0xffffff, emissiveIntensity: 0.55 }), trim]), w / 2, floorY + WALL_H + 2.8, d - 0.4));
     g.add(roof);
@@ -1743,7 +1743,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
       const when = new Date(s.nextRunAt);
       const mins = Math.round((when - now) / 60000);
       const rel = mins <= 0 ? "agora" : mins < 60 ? `em ${mins} min` : mins < 1440 ? `em ${Math.floor(mins / 60)} h ${mins % 60 ? `${mins % 60} min` : ""}` : `em ${Math.round(mins / 1440)} d`;
-      const hm = when.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", ...(mins < 1440 ? {} : { day: "2-digit", month: "2-digit" }), hour: "2-digit", minute: "2-digit" });
+      const hm = when.toLocaleString("zh-CN", { timeZone: "America/Sao_Paulo", ...(mins < 1440 ? {} : { day: "2-digit", month: "2-digit" }), hour: "2-digit", minute: "2-digit" });
       const soon = mins <= 15;
       b.soon = soon;
       const html = `<div class="al-time ${soon ? "soon" : ""}">⏰ ${esc(hm)} · ${esc(rel)}</div><div class="al-title">${esc(s.title)}</div><div class="al-who">💤 ${esc(ag ? `${ag.emoji} ${ag.name}` : "—")}</div>`;
@@ -1794,15 +1794,15 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     if (!m) {
       x.fillStyle = "#f6b94a";
       x.font = `bold ${54 * u}px system-ui, sans-serif`;
-      x.fillText("🤝 Sala livre", 40 * u, 110 * u);
+      x.fillText("🤝 会议室空闲", 40 * u, 110 * u);
       x.fillStyle = "#9cc4e4";
       x.font = `${34 * u}px system-ui, sans-serif`;
-      x.fillText("Use “🤝 Reunião” no topo para chamar", 40 * u, 220 * u);
-      x.fillText("vários agentes para a mesma tarefa.", 40 * u, 270 * u);
+      x.fillText("点击顶部的「🤝 会议」", 40 * u, 220 * u);
+      x.fillText("邀请多个智能体处理同一任务。", 40 * u, 270 * u);
     } else {
       x.fillStyle = "#f6b94a";
       x.font = `bold ${36 * u}px system-ui, sans-serif`;
-      x.fillText("🔴 Reunião em andamento", 40 * u, 60 * u);
+      x.fillText("🔴 会议进行中", 40 * u, 60 * u);
       x.fillStyle = "#ffffff";
       x.font = `bold ${50 * u}px system-ui, sans-serif`;
       const full = `${m.identifier ? m.identifier + " · " : ""}${m.title}`;
@@ -1841,10 +1841,10 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     x.fillStyle = "#ffd54f";
     x.font = `bold ${56 * u}px system-ui, sans-serif`;
     x.textBaseline = "middle";
-    x.fillText("⏰ Próximas tarefas agendadas", pad, 62 * u);
+    x.fillText("⏰ 即将运行的定时任务", pad, 62 * u);
     x.fillStyle = "#8fb3d1";
     x.font = `${36 * u}px system-ui, sans-serif`;
-    const now = new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+    const now = new Date().toLocaleTimeString("zh-CN", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
     x.textAlign = "right";
     x.fillText(`Rio · ${now}`, w - pad, 62 * u);
     x.textAlign = "left";
@@ -1853,7 +1853,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     const rowH = (h - 130 * u) / ROWS;
     const next = schedules.filter((s) => s.status === "active" && s.nextRunAt).slice(0, ROWS);
     const tz = { timeZone: "America/Sao_Paulo" };
-    const todayStr = new Date().toLocaleDateString("pt-BR", { ...tz, day: "2-digit", month: "2-digit" });
+    const todayStr = new Date().toLocaleDateString("zh-CN", { ...tz, day: "2-digit", month: "2-digit" });
     const fit = (str, max) => {
       if (x.measureText(str).width <= max) return str;
       while (str.length > 1 && x.measureText(str + "…").width > max) str = str.slice(0, -1);
@@ -1862,8 +1862,8 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     next.forEach((s, i) => {
       const top = 115 * u + i * rowH;
       const when = new Date(s.nextRunAt);
-      const day = when.toLocaleDateString("pt-BR", { ...tz, day: "2-digit", month: "2-digit" });
-      const hm = when.toLocaleTimeString("pt-BR", { ...tz, hour: "2-digit", minute: "2-digit" });
+      const day = when.toLocaleDateString("zh-CN", { ...tz, day: "2-digit", month: "2-digit" });
+      const hm = when.toLocaleTimeString("zh-CN", { ...tz, hour: "2-digit", minute: "2-digit" });
       const soon = when - Date.now() < 60 * 60_000;
       x.fillStyle = soon ? "rgba(255,213,79,0.16)" : i % 2 ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.08)";
       x.fillRect(pad * 0.6, top + 4 * u, w - pad * 1.2, rowH - 8 * u);
@@ -1888,7 +1888,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     if (!next.length) {
       x.fillStyle = "#8fb3d1";
       x.font = `${40 * u}px system-ui, sans-serif`;
-      x.fillText("Nenhuma tarefa agendada ativa.", pad, 200 * u);
+      x.fillText("没有启用的定时任务。", pad, 200 * u);
     }
     x.textBaseline = "alphabetic";
     board.tex.needsUpdate = true;
@@ -1986,7 +1986,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     );
     if (!near.length) return;
     say(av, `👋 Oi, ${firstName(near[0].agent?.name)}!`, near[0].pos, t);
-    near.forEach((n, i) => say(n, i ? "👋" : `👋 Olá, ${firstName(av.agent?.name)}!`, av.pos, t));
+    near.forEach((n, i) => say(n, i ? "👋" : `👋 你好，${firstName(av.agent?.name)}!`, av.pos, t));
   }
 
   /**
@@ -2026,7 +2026,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
 
   const clock = new THREE.Clock();
   let last = 0;
-  let paused = false; // visão 3D escondida (Lista, Agenda, Histórico): não desenha
+  let paused = false; // visão 3D escondida (列表, 日程, 历史): não desenha
   renderer.setAnimationLoop(() => {
     if (paused) return;
     const t = clock.getElapsedTime();

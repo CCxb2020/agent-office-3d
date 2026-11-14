@@ -69,10 +69,10 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
     dlg.innerHTML = `
       <form method="dialog" class="meet-form">
         <header><h2>${opts.pair ? "🗣️ Conversa entre agentes" : "🤝 Nova reunião de agentes"}</h2>
-          <button type="button" class="ghost" data-x="list">📋 Reuniões abertas (${(getData()?.meetings ?? []).length})</button>
-          <button type="button" class="close" data-x="close" aria-label="Fechar">✕</button></header>
-        <label>Assunto<input name="title" maxlength="120" required placeholder="Ex.: Campanha de verão dos hotéis" value="${esc(title)}" /></label>
-        <label>Pauta / o que vocês devem resolver juntos<textarea name="prompt" rows="4" required placeholder="Descreva a tarefa. Cada agente contribui com a sua especialidade e o coordenador consolida.">${esc(prompt)}</textarea></label>
+          <button type="button" class="ghost" data-x="list">📋 会议 待处理 (${(getData()?.meetings ?? []).length})</button>
+          <button type="button" class="close" data-x="close" aria-label="关闭">✕</button></header>
+        <label>主题<input name="title" maxlength="120" required placeholder="例如：夏季推广活动" value="${esc(title)}" /></label>
+        <label>会议议题<textarea name="prompt" rows="4" required placeholder="描述任务。成员按专长分工，由协调人汇总。">${esc(prompt)}</textarea></label>
         <div class="meet-pick-head">
           <b>Participantes <small>(${picked.length}/10 · o 1º coordena)</small></b>
           <button type="button" data-x="suggest" title="Sugere agentes pelas palavras do assunto e da pauta">✨ Sugerir pela pauta</button>
@@ -82,7 +82,7 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
           return `<span class="chip-ag ${i === 0 ? "lead" : ""}">${i === 0 ? "👑 " : ""}${esc(a?.emoji ?? "")} ${esc(a?.name ?? id)}
             ${i ? `<button type="button" data-lead="${id}" title="Tornar coordenador">👑</button>` : ""}<button type="button" data-rm="${id}" title="Tirar">✕</button></span>`;
         }).join("") : `<small class="muted">Clique nos agentes abaixo (ou use ✨ Sugerir).</small>`}</div>
-        <input class="meet-search" placeholder="🔎 Buscar agente…" value="${esc(filterText)}" />
+        <input class="meet-search" placeholder="🔎 搜索 agente…" value="${esc(filterText)}" />
         <ul class="meet-list">${listItems()}</ul>
         <footer>
           <small class="muted">${pair ? "Os dois conversam no mesmo tópico; o primeiro coordena." : "Cria uma issue com a pauta para o coordenador e chama os demais por menção, no mesmo tópico."}</small>
@@ -115,9 +115,9 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
     const list = getData()?.meetings ?? [];
     dlg.innerHTML = `
       <div class="meet-form">
-        <header><h2>📋 Reuniões abertas</h2>
+        <header><h2>📋 会议 待处理</h2>
           <button type="button" class="ghost" data-x="new">🤝 Nova reunião</button>
-          <button type="button" class="close" data-x="close" aria-label="Fechar">✕</button></header>
+          <button type="button" class="close" data-x="close" aria-label="关闭">✕</button></header>
         ${list.length ? list.map((m) => `
           <div class="meet-card">
             <div><b>${esc(m.identifier ?? "")}</b> ${esc(m.title)} <small class="muted">· ${esc(m.status)}</small></div>
@@ -125,8 +125,8 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
               const a = byId(id);
               return `<button type="button" class="chip-ag ${id === m.coordinator ? "lead" : ""} ${a?.state ?? ""}" data-agent="${id}">${id === m.coordinator ? "👑 " : ""}${esc(a?.emoji ?? "")} ${esc(a?.name ?? "?")}</button>`;
             }).join("")}</div>
-            <div class="meet-msg"><input placeholder="Mensagem para todos os participantes…" data-msg="${m.id}" />
-              <button type="button" data-send="${m.id}">📨 Enviar</button>
+            <div class="meet-msg"><input placeholder="给所有参会者发送消息…" data-msg="${m.id}" />
+              <button type="button" data-send="${m.id}">📨 发送</button>
               <button type="button" class="primary" data-end="${m.id}">✅ Encerrar</button></div>
           </div>`).join("") : `<p class="muted">Nenhuma reunião aberta. Crie uma em “🤝 Nova reunião”.</p>`}
       </div>`;
@@ -135,17 +135,17 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
   async function submit(opts) {
     const title = dlg.querySelector("[name=title]").value.trim();
     const prompt = dlg.querySelector("[name=prompt]").value.trim();
-    if (picked.length < 2 || !title || !prompt) return toast("Preencha assunto, pauta e pelo menos 2 agentes.", false);
+    if (picked.length < 2 || !title || !prompt) return toast("填写主题和议题，并选择至少两位智能体。", false);
     const btn = dlg.querySelector("button[type=submit]");
     btn.disabled = true;
     btn.textContent = "⏳ Chamando os agentes…";
     try {
       const { meeting } = await api("/api/meetings", { title, prompt, agents: picked.map((id) => ({ id, name: byId(id)?.name })) });
-      toast(`${meeting.identifier ?? "Reunião"} criada: ${picked.length} agentes a caminho da sala de reunião.`);
+      toast(`${meeting.identifier ?? "会议"} criada: ${picked.length} agentes a caminho da sala de reunião.`);
       dlg.close();
       onChanged();
     } catch (e) {
-      toast(`Não deu: ${e.message}`, false);
+      toast(`操作失败： ${e.message}`, false);
       btn.disabled = false;
       btn.textContent = opts.pair ? "🤝 Iniciar conversa" : "🤝 Iniciar reunião";
     }
@@ -186,23 +186,23 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
       try {
         await api(`/api/meetings/${d.send}/message`, { text: input.value, names: names(m?.agents ?? []) });
         input.value = "";
-        toast("Mensagem enviada para todos os participantes.");
+        toast("消息已发给所有参会者。");
         onChanged();
       } catch (err) {
-        toast(`Não deu: ${err.message}`, false);
+        toast(`操作失败： ${err.message}`, false);
       }
       t.disabled = false;
       return;
     }
     if (d.end) {
-      if (!confirm("Encerrar a reunião? A issue vai para concluída e os agentes voltam aos seus lugares.")) return;
+      if (!confirm("Encerrar a reunião? A issue vai para 已完成 e os agentes voltam aos seus lugares.")) return;
       try {
         await api(`/api/meetings/${d.end}/end`, {});
-        toast("Reunião encerrada.");
+        toast("会议已结束。");
         onChanged();
         setTimeout(renderList, 600);
       } catch (err) {
-        toast(`Não deu: ${err.message}`, false);
+        toast(`操作失败： ${err.message}`, false);
       }
     }
   });

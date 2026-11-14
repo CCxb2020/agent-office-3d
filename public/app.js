@@ -11,12 +11,12 @@ import { createIssueDrawer } from "./manage.js";
 import { activeWork, workAttrs, workIcon, workSummary, workTitle } from "./work.js";
 
 const STATES = {
-  working: { label: "Trabalhando" },
-  blocked: { label: "Bloqueado" },
-  idle: { label: "Ocioso" },
-  offline: { label: "Offline" },
+  working: { label: "工作中" },
+  blocked: { label: "受阻" },
+  idle: { label: "空闲" },
+  offline: { label: "离线" },
 };
-const SCHED_FILTERS = [["all", "Todas"], ["active", "Ativas"], ["paused", "Pausadas"]];
+const SCHED_FILTERS = [["all", "全部"], ["active", "Ativas"], ["paused", "Pausadas"]];
 
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) =>
@@ -67,8 +67,8 @@ let unified = false;
 function tickClock() {
   const h = office.hour;
   const live = $("#clock-mode").value === "live";
-  const now = new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
-  $("#clock-time").textContent = live ? `Rio ${now}` : `Prévia ${String(Math.floor(h)).padStart(2, "0")}h`;
+  const now = new Date().toLocaleTimeString("zh-CN", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+  $("#clock-time").textContent = live ? `Rio ${now}` : `预览 ${String(Math.floor(h)).padStart(2, "0")}h`;
   $("#clock-icon").textContent = h >= 19.3 || h < 5.5 ? "🌙" : h < 7.5 ? "🌅" : h < 17.2 ? "☀️" : "🌇";
 }
 $("#clock-mode").addEventListener("change", (e) => {
@@ -133,7 +133,7 @@ function setSide(s) {
   for (const b of document.querySelectorAll(".side-tabs button")) b.setAttribute("aria-selected", String(b.dataset.side === s));
   $("#agent-list").hidden = s !== "agents";
   $("#schedule-list").hidden = s !== "schedules";
-  $("#search").placeholder = s === "agents" ? "Buscar agente ou issue…" : "Buscar tarefa ou agente…";
+  $("#search").placeholder = s === "agents" ? "搜索智能体或任务…" : "搜索 tarefa ou agente…";
   renderSide();
 }
 document.querySelector(".side-tabs").addEventListener("click", (e) => {
@@ -152,17 +152,17 @@ function visible(a) {
 function renderStats() {
   const count = (s) => data.agents.filter((a) => a.state === s).length;
   $("#stats").innerHTML = Object.entries(STATES)
-    .map(([k, v]) => `<button type="button" class="chip" data-chip="${k}" title="Filtrar: ${v.label}"><span class="dot ${k}"></span><b>${count(k)}</b> ${v.label.toLowerCase()}</button>`)
+    .map(([k, v]) => `<button type="button" class="chip" data-chip="${k}" title="筛选: ${v.label}"><span class="dot ${k}"></span><b>${count(k)}</b> ${v.label.toLowerCase()}</button>`)
     .join("") +
     // Quantos já trabalharam hoje e o total de execuções do dia.
     (() => {
       const worked = data.agents.filter((a) => a.today?.runs);
       const runs = worked.reduce((t, a) => t + a.today.runs, 0);
-      return worked.length ? `<span class="chip" title="Agentes que já executaram algo hoje · execuções do dia">⚡ <b>${worked.length}</b> trabalharam hoje · ${runs} execuções</span>` : "";
+      return worked.length ? `<span class="chip" title="智能体 que já executaram algo 今天 · 次运行 do dia">⚡ <b>${worked.length}</b> 位今天已工作 · ${runs} 次运行</span>` : "";
     })();
   $("#count-agents").textContent = data.agents.length;
   $("#count-schedules").textContent = data.schedules?.length ?? 0;
-  $("#updated").textContent = `Atualizado às ${new Date(data.updatedAt).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" })}`;
+  $("#updated").textContent = `更新时间 ${new Date(data.updatedAt).toLocaleTimeString("zh-CN", { timeZone: "America/Sao_Paulo" })}`;
 }
 $("#stats").addEventListener("click", (e) => {
   const b = e.target.closest("[data-chip]");
@@ -174,11 +174,11 @@ $("#stats").addEventListener("click", (e) => {
 });
 
 function renderFilters() {
-  const opts = side === "agents" ? [["all", "Todos"], ...Object.entries(STATES).map(([k, v]) => [k, v.label])] : SCHED_FILTERS;
+  const opts = side === "agents" ? [["all", "全部"], ...Object.entries(STATES).map(([k, v]) => [k, v.label])] : SCHED_FILTERS;
   const cur = side === "agents" ? filter : schedFilter;
   const extra = side === "agents"
-    ? `<button type="button" class="toggle" data-unified aria-pressed="${unified}" title="Junta os agentes filtrados num open-space só">🏢 Escritório único</button>`
-    : `<button type="button" class="primary small-btn" data-new-sched>➕ Nova tarefa agendada</button>`;
+    ? `<button type="button" class="toggle" data-unified aria-pressed="${unified}" title="把筛选出的智能体放在同一个办公室">🏢 合并办公室</button>`
+    : `<button type="button" class="primary small-btn" data-new-sched>➕ 新建定时任务</button>`;
   const cnt = (k) =>
     side === "agents"
       ? k === "all" ? data.agents.length : data.agents.filter((a) => a.state === k).length
@@ -205,7 +205,7 @@ function renderSide() {
               .map(
                 (a) => `<li class="agent ${a.id === selectedId ? "selected" : ""}" data-id="${a.id}">
                   <span class="avatar">${esc(a.emoji)}<i class="dot ${a.state}"></i></span>
-                  <span class="name">${esc(a.name)}<small>${a.state === "working" && a.work?.[0]?.startedAt ? `⏱ ${elapsed(a.work[0].startedAt)} · ` : ""}${esc(taskLabel(a) || `${STATES[a.state].label} · ${a.provider}`)}${a.today?.runs ? `<span class="today-chip ${a.today.failed ? "bad" : ""}" title="Execuções hoje: ${a.today.ok} concluída(s), ${a.today.failed} com falha">⚡${a.today.runs} hoje</span>` : ""}</small></span></li>`,
+                  <span class="name">${esc(a.name)}<small>${a.state === "working" && a.work?.[0]?.startedAt ? `⏱ ${elapsed(a.work[0].startedAt)} · ` : ""}${esc(taskLabel(a) || `${STATES[a.state].label} · ${a.provider}`)}${a.today?.runs ? `<span class="today-chip ${a.today.failed ? "bad" : ""}" title="今日运行: ${a.today.ok} 成功, ${a.today.failed} 失败">⚡${a.today.runs} 今天</span>` : ""}</small></span></li>`,
               )
               .join(""),
         )
@@ -227,7 +227,7 @@ function renderMain() {
             .map(
               (a) => `<div class="card ${a.state} ${a.id === selectedId ? "selected" : ""}" data-id="${a.id}">
                 <div class="card-top"><span class="emoji">${esc(a.emoji)}</span><b>${esc(a.name)}</b></div>
-                ${a.squad ? `<div class="task">👥 ${esc(a.squad)}${a.leader ? " (líder)" : ""}</div>` : ""}
+                ${a.squad ? `<div class="task">👥 ${esc(a.squad)}${a.leader ? "（组长）" : ""}</div>` : ""}
                 <div class="task"><span class="dot ${a.state}"></span> ${esc(STATES[a.state].label)}${taskLabel(a) ? ` · ${esc(taskLabel(a))}` : ""}</div></div>`,
             )
             .join("") +
@@ -246,7 +246,7 @@ const panel = createAgentPanel($("#detail"), {
   onAuthChange: (auth) => {
     const b = $("#auth");
     b.hidden = !auth.enabled;
-    b.textContent = auth.auth ? "🔓 Sair" : "🔐 Entrar";
+    b.textContent = auth.auth ? "🔓 退出" : "🔐 登录";
     sched?.authChanged();
     if (view === "history") historyView?.load();
   },
@@ -321,7 +321,7 @@ const issueDrawer = createIssueDrawer($("#issue-detail"), {
 $("#theme").value = office.theme;
 $("#theme").onchange = (e) => {
   office.setTheme(e.target.value);
-  toast(`Cenário: ${e.target.selectedOptions[0].textContent}`);
+  toast(`场景: ${e.target.selectedOptions[0].textContent}`);
 };
 $("#meet-btn").onclick = () => meetings.open({ list: (data?.meetings ?? []).length > 0 });
 
@@ -352,7 +352,7 @@ panel.init();
 $("#auth").addEventListener("click", async () => {
   const me = await fetch("/api/me").then((r) => r.json());
   if (me.auth) {
-    if (!confirm("Sair do painel?")) return;
+    if (!confirm("退出 do painel?")) return;
     await panel.logout();
     location.reload();
   } else panel.login();
@@ -451,7 +451,7 @@ async function refresh() {
     apply(json);
   } catch (e) {
     $("#error").hidden = false;
-    $("#error").textContent = `Sem dados do Multica: ${e.message}`;
+    $("#error").textContent = `无法读取 Multica 数据: ${e.message}`;
   }
   // Com o tempo real ligado, a consulta periódica é só uma rede de segurança.
   refreshTimer = setTimeout(refresh, (live ? 60 : wait) * 1000);
@@ -513,11 +513,11 @@ function renderCampusOptions() {
   const machines = [...new Set(data.agents.map((a) => a.machine))].sort();
   const runtimes = [...new Set(data.agents.map((a) => `${a.machine} · ${a.provider}`))].sort();
   const html =
-    `<option value="sede">Sede · todos (${data.agents.length})</option>` +
-    `<option value="bairro:machine">🏙️ Bairro · um prédio por máquina</option>` +
-    `<option value="bairro:runtime">🏙️ Bairro · um prédio por runtime</option>` +
-    `<optgroup label="Só o prédio da máquina">${machines.map((m) => `<option value="um:machine:${esc(m)}">💻 ${esc(m)} (${count((a) => a.machine === m)})</option>`).join("")}</optgroup>` +
-    `<optgroup label="Só o prédio do runtime">${runtimes.map((r) => `<option value="um:runtime:${esc(r)}">⚙️ ${esc(r.replace(/^(.*) · (.*)$/, "$2 · $1"))} (${count((a) => `${a.machine} · ${a.provider}` === r)})</option>`).join("")}</optgroup>`;
+    `<option value="sede">总部 · 全部 (${data.agents.length})</option>` +
+    `<option value="bairro:machine">🏙️ 按机器分楼</option>` +
+    `<option value="bairro:runtime">🏙️ 按运行时分楼</option>` +
+    `<optgroup label="只显示这台机器">${machines.map((m) => `<option value="um:machine:${esc(m)}">💻 ${esc(m)} (${count((a) => a.machine === m)})</option>`).join("")}</optgroup>` +
+    `<optgroup label="只显示这个运行时">${runtimes.map((r) => `<option value="um:runtime:${esc(r)}">⚙️ ${esc(r.replace(/^(.*) · (.*)$/, "$2 · $1"))} (${count((a) => `${a.machine} · ${a.provider}` === r)})</option>`).join("")}</optgroup>`;
   if (sel.dataset.html !== html) {
     sel.innerHTML = html;
     sel.dataset.html = html;
@@ -567,10 +567,10 @@ const palette = createPalette({
     if (!data) return [];
     const machines = [...new Set(data.agents.map((a) => a.machine))];
     return [
-      { key: "sede", name: "Sede · todos" },
-      { key: "bairro:machine", name: "Bairro por máquina" },
-      { key: "bairro:runtime", name: "Bairro por runtime" },
-      ...machines.map((m) => ({ key: `um:machine:${m}`, name: `Prédio de ${m}` })),
+      { key: "sede", name: "总部 · 全部" },
+      { key: "bairro:machine", name: "按机器分楼" },
+      { key: "bairro:runtime", name: "按运行时分楼" },
+      ...machines.map((m) => ({ key: `um:machine:${m}`, name: `办公楼 de ${m}` })),
     ];
   },
   onAgent: (id) => {
@@ -584,15 +584,15 @@ const palette = createPalette({
   },
   onBuilding: (k) => setCampusValue(k),
   actions: [
-    { label: "🏙️ Ver a orla (fachada)", run: () => (setView("3d"), office.setMode("facade"), syncModeButton()) },
-    { label: "🏢 Entrar no escritório", run: () => (setView("3d"), office.setMode("interior"), syncModeButton()) },
-    { label: "😴 Dormitório das agendadas (3D)", run: () => (setView("3d"), office.focusDorm(), syncModeButton()) },
-    { label: "📅 Abrir a Agenda", run: () => setView("agenda") },
-    { label: "☰ Abrir a Lista", run: () => setView("2d") },
-    { label: "➕ Nova tarefa agendada", run: () => createSchedule() },
-    { label: "📰 Abrir o feed ao vivo", run: () => feed.open() },
-    { label: "🌙 Ver à noite", run: () => (($("#clock-mode").value = "21"), $("#clock-mode").dispatchEvent(new Event("change"))) },
-    { label: "☀️ Hora real do Rio", run: () => (($("#clock-mode").value = "live"), $("#clock-mode").dispatchEvent(new Event("change"))) },
+    { label: "🏙️ 查看海滨外景", run: () => (setView("3d"), office.setMode("facade"), syncModeButton()) },
+    { label: "🏢 进入办公室", run: () => (setView("3d"), office.setMode("interior"), syncModeButton()) },
+    { label: "😴 定时任务休息区 (3D)", run: () => (setView("3d"), office.focusDorm(), syncModeButton()) },
+    { label: "📅 打开日程", run: () => setView("agenda") },
+    { label: "☰ 打开列表", run: () => setView("2d") },
+    { label: "➕ 新建定时任务", run: () => createSchedule() },
+    { label: "📰 打开实时动态", run: () => feed.open() },
+    { label: "🌙 查看夜景", run: () => (($("#clock-mode").value = "21"), $("#clock-mode").dispatchEvent(new Event("change"))) },
+    { label: "☀️ 里约当地时间", run: () => (($("#clock-mode").value = "live"), $("#clock-mode").dispatchEvent(new Event("change"))) },
   ],
 });
 $("#palette-btn").addEventListener("click", () => palette.open());
@@ -603,7 +603,7 @@ document.addEventListener("click", async (e) => {
   if (!panel.auth.auth) return panel.login();
   const fails = data.schedules.filter((s) => s.lastRun?.status === "failed" && !s.lastRun.acked);
   if (!fails.length) return toast("Nenhuma falha pendente.");
-  if (!confirm(`Arquivar ${fails.length} falha(s) pendente(s)? Elas saem das pendências do painel (nada muda no Multica).`)) return;
+  if (!confirm(`归档 ${fails.length} falha(s) pendente(s)? Elas saem das 待处理事项s do painel (nada muda no Multica).`)) return;
   try {
     for (const s of fails) await api("/api/acks", { id: s.lastRun.id, ack: true });
     toast(`${fails.length} falha(s) arquivada(s).`);
@@ -633,7 +633,7 @@ document.addEventListener("keydown", (e) => {
     return syncModeButton();
   }
   if (k === "f") return feed.toggle();
-  if (k === "?") return toast("Atalhos: Ctrl+K busca · / buscar · 1 3D · 2 Lista · 3 Agenda · O orla · E escritório · F feed · Esc fechar");
+  if (k === "?") return toast("Atalhos: Ctrl+K busca · / buscar · 1 3D · 2 列表 · 3 日程 · O orla · E escritório · F feed · Esc fechar");
 });
 
 // ---------- link direto (#a=agente, #s=agendada, #p=prédio, #v=visão) ----------
@@ -666,7 +666,7 @@ function renderWorkingNow() {
   const list = data.agents.filter((a) => a.state === "working").sort((a, b) => a.machine.localeCompare(b.machine) || a.name.localeCompare(b.name));
   el.hidden = view !== "3d" || !list.length;
   el.innerHTML =
-    `<button type="button" class="wn-head" data-wn-toggle>▶️ Trabalhando agora <b>${list.length}</b><span>${wnCollapsed ? "▸" : "▾"}</span></button>` +
+    `<button type="button" class="wn-head" data-wn-toggle>▶️ 正在工作 <b>${list.length}</b><span>${wnCollapsed ? "▸" : "▾"}</span></button>` +
     (wnCollapsed
       ? ""
       : `<ul>${list
@@ -710,7 +710,7 @@ function openSpotMenu({ agentId, x, y }) {
     .map((a) => `<option value="${a.id}" ${a.id === agentId ? "selected" : ""}>${esc(a.emoji)} ${esc(a.name)} · ${esc(a.machine)}${a.state === "offline" ? " (offline)" : ""}</option>`)
     .join("");
   spotMenu.innerHTML = `
-    <button type="button" class="sm-close" aria-label="Fechar">✕</button>
+    <button type="button" class="sm-close" aria-label="关闭">✕</button>
     ${owner
       ? `<div class="sm-title">🪑 Mesa de <b>${esc(owner.emoji)} ${esc(owner.name)}</b></div>
          <div class="sm-sub">💻 ${esc(owner.machine)} · ${esc(owner.provider)} · ${STATE_TXT[owner.state]}</div>
@@ -721,7 +721,7 @@ function openSpotMenu({ agentId, x, y }) {
          </div>
          <div class="sm-sep">ou iniciar outro agente aqui</div>`
       : `<div class="sm-title">✨ Iniciar um agente</div><div class="sm-sub">Escolha quem vai trabalhar e o que fazer.</div>`}
-    <select class="sm-pick" aria-label="Agente">${opts}</select>
+    <select class="sm-pick" aria-label="智能体">${opts}</select>
     <div class="sm-actions">
       <button type="button" class="primary" data-sm="new">➕ Nova tarefa</button>
       <button type="button" data-sm="chat">💬 Conversar</button>

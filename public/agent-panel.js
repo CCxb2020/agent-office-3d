@@ -9,21 +9,21 @@ const esc = (s) =>
 const RUN_STATUS = {
   running: "▶️ rodando",
   dispatched: "📤 enviada",
-  queued: "⏳ na fila",
-  completed: "✅ concluída",
-  failed: "❌ falhou",
-  cancelled: "⏹ cancelada",
+  queued: "⏳ 排队中",
+  completed: "✅ 已完成",
+  failed: "❌ 失败",
+  cancelled: "⏹ 已取消",
 };
 const ISSUE_STATUS = {
-  todo: "A fazer",
-  in_progress: "Em andamento",
-  in_review: "Em revisão",
-  blocked: "Bloqueada",
-  done: "Concluída",
-  backlog: "Backlog",
-  cancelled: "Cancelada",
+  todo: "待办",
+  in_progress: "进行中",
+  in_review: "待审核",
+  blocked: "受阻",
+  done: "已完成",
+  backlog: "待安排",
+  cancelled: "已取消",
 };
-const STATE_LABEL = { working: "Trabalhando", blocked: "Bloqueado", idle: "Ocioso", offline: "Offline" };
+const STATE_LABEL = { working: "工作中", blocked: "受阻", idle: "空闲", offline: "离线" };
 
 function ago(iso) {
   if (!iso) return "";
@@ -60,7 +60,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
   let poller = null;
   const openRuns = new Set();
 
-  el.innerHTML = `<button class="close" type="button" aria-label="Fechar">✕</button><div class="head"></div><div class="body"></div>`;
+  el.innerHTML = `<button class="close" type="button" aria-label="关闭">✕</button><div class="head"></div><div class="body"></div>`;
   const head = el.querySelector(".head");
   const body = el.querySelector(".body");
   el.querySelector(".close").onclick = () => onClose();
@@ -79,18 +79,18 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     if (!a) return;
     head.innerHTML = `
       <h2><span>${esc(a.emoji)}</span>${esc(a.name)}</h2>
-      <div class="meta"><span class="dot ${a.state}"></span> ${STATE_LABEL[a.state]} · 💻 ${esc(a.machine)} · ${esc(a.provider)}${a.squad ? ` · 👥 ${esc(a.squad)}${a.leader ? " (líder)" : ""}` : ""}</div>
-      <div class="meta">${a.today?.runs ? `⚡ <b>${a.today.runs}</b> execuç${a.today.runs > 1 ? "ões" : "ão"} hoje · ✅ ${a.today.ok}${a.today.failed ? ` · ❌ ${a.today.failed}` : ""}${a.today.lastAt ? ` · última ${new Date(a.today.lastAt).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}` : ""}` : "Ainda não executou nada hoje"}${a.review ? ` · 👀 ${a.review} em revisão` : ""}</div>
+      <div class="meta"><span class="dot ${a.state}"></span> ${STATE_LABEL[a.state]} · 💻 ${esc(a.machine)} · ${esc(a.provider)}${a.squad ? ` · 👥 ${esc(a.squad)}${a.leader ? "（组长）" : ""}` : ""}</div>
+      <div class="meta">${a.today?.runs ? `⚡ <b>${a.today.runs}</b> execuç${a.today.runs > 1 ? "ões" : "ão"} 今天 · ✅ ${a.today.ok}${a.today.failed ? ` · ❌ ${a.today.failed}` : ""}${a.today.lastAt ? ` · 上次 ${new Date(a.today.lastAt).toLocaleTimeString("zh-CN", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}` : ""}` : "今天尚未执行任务"}${a.review ? ` · 👀 ${a.review} 待审核` : ""}</div>
       ${auth.auth ? `<div class="head-actions">
-        <button type="button" data-act="talk" title="Abre uma conversa entre este agente e outro, no mesmo tópico">🗣️ Conversar com outro agente</button>
-        <button type="button" data-act="meet" title="Reunião com vários agentes para uma mesma tarefa">🤝 Chamar para reunião</button></div>` : ""}
-      ${a.work.length ? `<div class="section-title">Agora${a.work.length > 1 ? ` · ${a.work.filter((w) => !w.queued).length} ao mesmo tempo` : ""}</div>${a.work.map((w) => `<div class="item clickable" data-wrun="${esc(w.id ?? "")}" data-wissue="${esc(w.issue?.id ?? "")}" data-wagent="${esc(a.id)}" title="Ver detalhes">${w.queued ? "🕓" : w.kind === "chat" ? "💬" : w.kind === "autopilot" ? "⏰" : "📋"} ${w.issue ? `<b>${esc(w.issue.identifier)}</b> ${esc(w.issue.title)}${w.issue.project ? ` <small>· 📁 ${esc(w.issue.project)}</small>` : ""}` : esc(w.about || w.label || w.kind)} <small>· ${w.queued ? "na fila" : ago(w.startedAt)}${w.by ? ` · por ${esc(w.by)}` : ""}</small>${w.issue && w.about ? `<div class="sub">📝 ${esc(w.about)}</div>` : ""}${w.now ? `<div class="sub">✍️ ${esc(w.now)}</div>` : ""}</div>`).join("")}` : ""}
-      ${a.blocked.length ? `<div class="section-title">🚧 Pendências (${a.blocked.length} bloqueada${a.blocked.length > 1 ? "s" : ""})</div>${a.blocked
+        <button type="button" data-act="talk" title="让两位智能体讨论同一主题">🗣️ 与另一位智能体对话</button>
+        <button type="button" data-act="meet" title="让多位智能体协作处理同一任务">🤝 邀请开会</button></div>` : ""}
+      ${a.work.length ? `<div class="section-title">现在${a.work.length > 1 ? ` · ${a.work.filter((w) => !w.queued).length} 项同时运行` : ""}</div>${a.work.map((w) => `<div class="item clickable" data-wrun="${esc(w.id ?? "")}" data-wissue="${esc(w.issue?.id ?? "")}" data-wagent="${esc(a.id)}" title="查看详情">${w.queued ? "🕓" : w.kind === "chat" ? "💬" : w.kind === "autopilot" ? "⏰" : "📋"} ${w.issue ? `<b>${esc(w.issue.identifier)}</b> ${esc(w.issue.title)}${w.issue.project ? ` <small>· 📁 ${esc(w.issue.project)}</small>` : ""}` : esc(w.about || w.label || w.kind)} <small>· ${w.queued ? "排队中" : ago(w.startedAt)}${w.by ? ` · por ${esc(w.by)}` : ""}</small>${w.issue && w.about ? `<div class="sub">📝 ${esc(w.about)}</div>` : ""}${w.now ? `<div class="sub">✍️ ${esc(w.now)}</div>` : ""}</div>`).join("")}` : ""}
+      ${a.blocked.length ? `<div class="section-title">🚧 等待区 (${a.blocked.length} bloqueada${a.blocked.length > 1 ? "s" : ""})</div>${a.blocked
         .map((b) => `<div class="item pend"><div><b>${esc(b.identifier)}</b> ${esc(b.title)}</div>${auth.auth && b.id ? `<div class="run-actions">
             <button type="button" class="primary" data-act="issue-status" data-status="done" data-issue="${b.id}" data-label="${esc(b.identifier)}">✅ Concluir</button>
             <button type="button" data-act="issue-status" data-status="todo" data-issue="${b.id}" data-label="${esc(b.identifier)}">↩️ Voltar para a fila</button>
             <button type="button" data-act="rerun" data-issue="${b.id}" data-label="${esc(b.identifier)}">🔁 Rodar de novo</button>
-            <button type="button" class="danger" data-act="issue-status" data-status="cancelled" data-issue="${b.id}" data-label="${esc(b.identifier)}">🚫 Cancelar</button></div>` : ""}</div>`)
+            <button type="button" class="danger" data-act="issue-status" data-status="cancelled" data-issue="${b.id}" data-label="${esc(b.identifier)}">🚫 取消</button></div>` : ""}</div>`)
         .join("")}` : ""}
       ${a.description ? `<p class="desc">${esc(a.description)}</p>` : ""}`;
   }
@@ -99,24 +99,24 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
   function failActions(runId, issue, acked) {
     const iss = issue
       ? `<button type="button" class="primary" data-act="issue-status" data-status="done" data-issue="${issue.id}" data-label="${esc(issue.identifier)}">✅ Concluir issue</button>
-         <button type="button" class="danger" data-act="issue-status" data-status="cancelled" data-issue="${issue.id}" data-label="${esc(issue.identifier)}">🚫 Cancelar issue</button>`
+         <button type="button" class="danger" data-act="issue-status" data-status="cancelled" data-issue="${issue.id}" data-label="${esc(issue.identifier)}">🚫 取消 issue</button>`
       : "";
-    return `${iss}<button type="button" data-act="ack" data-run="${runId}" data-ack="${acked ? "0" : "1"}">${acked ? "↩️ Desarquivar falha" : "📦 Arquivar falha"}</button>`;
+    return `${iss}<button type="button" data-act="ack" data-run="${runId}" data-ack="${acked ? "0" : "1"}">${acked ? "↩️ Desarquivar falha" : "📦 归档 falha"}</button>`;
   }
 
-  const STATUS_MSG = { done: "concluída", cancelled: "cancelada", todo: "voltou para a fila", in_progress: "em andamento" };
+  const STATUS_MSG = { done: "已完成", cancelled: "已取消", todo: "已返回队列", in_progress: "进行中" };
   /** Trata os botões de falha/pendência (no cabeçalho ou no corpo). Retorna true se tratou. */
   function handleFailAction(b) {
     const { act: kind, run, issue, label, status } = b.dataset;
     if (kind === "issue-status") {
-      const verb = { done: "Concluir", cancelled: "Cancelar", todo: "Voltar para a fila" }[status] ?? status;
+      const verb = { done: "Concluir", cancelled: "取消", todo: "Voltar para a fila" }[status] ?? status;
       if (!confirm(`${verb} ${label}?`)) return true;
       actRaw(() => api(`/api/issues/${issue}/status`, { status }), `${label} ${STATUS_MSG[status] ?? status}.`);
       return true;
     }
     if (kind === "ack") {
       const on = b.dataset.ack === "1";
-      actRaw(() => api("/api/acks", { id: run, ack: on }), on ? "Falha arquivada: saiu das pendências." : "Falha desarquivada.");
+      actRaw(() => api("/api/acks", { id: run, ack: on }), on ? "Falha arquivada: saiu das 待处理事项s." : "Falha desarquivada.");
       return true;
     }
     return false;
@@ -127,16 +127,16 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     cleanup();
     cleanup = () => {};
     if (!auth.enabled) {
-      body.innerHTML = `<p class="muted">Histórico e ações estão desligados neste servidor (sem senha de administrador configurada).</p>`;
+      body.innerHTML = `<p class="muted">当前为只读模式，运行详情和操作需要登录。</p>`;
       return;
     }
     if (!auth.auth) {
-      body.innerHTML = `<button type="button" class="primary wide" data-act="login">🔐 Entrar para ver histórico e ações</button>`;
+      body.innerHTML = `<button type="button" class="primary wide" data-act="login">🔐 登录查看运行历史和操作</button>`;
       return;
     }
     body.innerHTML = `
       <div class="tabs" role="tablist">
-        ${[["activity", "📜 Atividade"], ["chat", "💬 Conversa"], ["chats", "🗨️ Chats"], ["issues", "📋 Issues"], ["new", "➕ Tarefa"], ["look", "👕 Visual"], ["config", "⚙️ Configurar"]]
+        ${[["activity", "📜 Atividade"], ["chat", "💬 Conversa"], ["chats", "🗨️ Chats"], ["issues", "📋 Issues"], ["new", "➕ 任务"], ["look", "👕 Visual"], ["config", "⚙️ Configurar"]]
           .map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${tab === k}">${l}</button>`)
           .join("")}
       </div>
@@ -150,7 +150,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
       return;
     }
     if (!activity) {
-      tb.innerHTML = `<p class="muted">Carregando…</p>`;
+      tb.innerHTML = `<p class="muted">正在加载…</p>`;
       loadActivity();
       return;
     }
@@ -165,7 +165,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
   function renderActivity(tb) {
     const runs = activity.runs;
     tb.innerHTML =
-      `<div class="toolbar"><small class="muted">Últimas ${runs.length} runs</small><button type="button" data-act="reload">↻ Atualizar</button></div>` +
+      `<div class="toolbar"><small class="muted">Últimas ${runs.length} runs</small><button type="button" data-act="reload">↻ 刷新</button></div>` +
       (runs.length
         ? runs
             .map((r) => {
@@ -178,7 +178,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
                 ${r.error ? `<div class="error small">${esc(r.error)}</div>` : ""}
                 <div class="run-actions">
                   <button type="button" data-act="steps" data-run="${r.id}">${openRuns.has(r.id) ? "▲ Esconder passos" : "▼ Ver passos"}</button>
-                  ${live ? `<button type="button" class="danger" data-act="cancel" data-run="${r.id}">⏹ Cancelar</button>` : ""}
+                  ${live ? `<button type="button" class="danger" data-act="cancel" data-run="${r.id}">⏹ 取消</button>` : ""}
                   ${r.issue && !live ? `<button type="button" data-act="rerun" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">🔁 Rodar de novo</button>` : ""}
                   ${failed ? failActions(r.id, r.issue, r.acked) : ""}
                 </div>
@@ -199,7 +199,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
   async function loadSteps(runId) {
     const box = body.querySelector(`.run[data-run="${runId}"] .steps`);
     if (!box) return;
-    if (!box.innerHTML) box.innerHTML = `<p class="muted">Carregando passos…</p>`;
+    if (!box.innerHTML) box.innerHTML = `<p class="muted">正在加载 passos…</p>`;
     try {
       const { messages } = await api(`/api/runs/${runId}/messages`);
       const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 10;
@@ -225,14 +225,14 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
   function renderIssues(tb) {
     const issues = activity.issues;
     tb.innerHTML =
-      `<div class="toolbar"><small class="muted">Issues atribuídas (${issues.length} mais recentes)</small><button type="button" data-act="reload">↻ Atualizar</button></div>` +
+      `<div class="toolbar"><small class="muted">分配的任务 (${issues.length} 条最近记录)</small><button type="button" data-act="reload">↻ 刷新</button></div>` +
       (issues.length
         ? issues
             .map(
               (i) => `<div class="issue" data-issue="${i.id}">
                 <div><b>${esc(i.identifier)}</b> ${esc(i.title)}</div>
                 <div class="issue-actions">
-                  <select data-act="status" data-issue="${i.id}" data-label="${esc(i.identifier)}" aria-label="Status de ${esc(i.identifier)}">
+                  <select data-act="status" data-issue="${i.id}" data-label="${esc(i.identifier)}" aria-label="状态 de ${esc(i.identifier)}">
                     ${Object.entries(ISSUE_STATUS).map(([k, l]) => `<option value="${k}" ${k === i.status ? "selected" : ""}>${l}</option>`).join("")}
                   </select>
                   <button type="button" data-act="instruct" data-issue="${i.id}">💬 Instruir</button>
@@ -240,19 +240,19 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
                 </div>
                 <form class="instruct" data-issue="${i.id}" hidden>
                   <textarea required rows="3" placeholder="O que o agente deve fazer nesta issue?"></textarea>
-                  <button type="submit" class="primary">Enviar ao agente</button>
+                  <button type="submit" class="primary">发送 ao agente</button>
                 </form>
               </div>`,
             )
             .join("")
-        : `<p class="muted">Nenhuma issue atribuída.</p>`);
+        : `<p class="muted">暂无分配任务。</p>`);
   }
 
   function renderNew(tb) {
     const a = getAgent(agentId);
     tb.innerHTML = `<form class="new-task">
-        <label>Título<input name="title" required maxlength="200" placeholder="Ex.: Relatório semanal de leads" /></label>
-        <label>Instruções<textarea name="prompt" required rows="7" placeholder="Descreva a tarefa para ${esc(a?.name ?? "o agente")}…"></textarea></label>
+        <label>标题<input name="title" required maxlength="200" placeholder="例如：每周线索报告" /></label>
+        <label>指令<textarea name="prompt" required rows="7" placeholder="Descreva a tarefa para ${esc(a?.name ?? "o agente")}…"></textarea></label>
         <button type="submit" class="primary wide">🚀 Criar tarefa e iniciar</button>
         <p class="muted small">Cria uma issue atribuída ao agente; a run começa na hora.</p>
         <div class="result"></div>
@@ -319,8 +319,8 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
       else openRuns.add(run);
       return renderActivity(body.querySelector(".tab-body"));
     }
-    if (kind === "cancel" && confirm("Cancelar esta run? O agente é interrompido na hora.")) {
-      return act(() => api(`/api/runs/${run}/cancel`, {}), "Run cancelada.");
+    if (kind === "cancel" && confirm("取消 esta run? O agente é interrompido na hora.")) {
+      return act(() => api(`/api/runs/${run}/cancel`, {}), "Run 已取消.");
     }
     if (kind === "rerun" && confirm(`Rodar ${label} de novo com este agente?`)) {
       return act(() => api(`/api/issues/${issue}/rerun`, {}), `${label} reenfileirada.`);
@@ -372,10 +372,10 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     const dlg = document.createElement("dialog");
     dlg.className = "login";
     dlg.innerHTML = `<form method="dialog">
-        <h3>🔐 Entrar no painel</h3>
-        <input type="password" name="password" autocomplete="current-password" required placeholder="Senha de administrador" />
+        <h3>🔐 登录 no painel</h3>
+        <input type="password" name="password" autocomplete="current-password" required placeholder="密码 de administrador" />
         <p class="error small" hidden></p>
-        <div class="row"><button value="cancel" formnovalidate type="submit">Cancelar</button><button class="primary" value="ok" type="submit">Entrar</button></div>
+        <div class="row"><button value="cancel" formnovalidate type="submit">取消</button><button class="primary" value="ok" type="submit">登录</button></div>
       </form>`;
     document.body.appendChild(dlg);
     dlg.showModal();

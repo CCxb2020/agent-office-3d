@@ -8,7 +8,7 @@ const esc = (s) =>
 const TZ = "America/Sao_Paulo";
 const TZ_OFFSET_MIN = { "America/Sao_Paulo": -180, UTC: 0, "Etc/UTC": 0 }; // Brasil sem horário de verão desde 2019
 const DOW = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-const RUN_STATUS = { issue_created: "📝 issue criada", completed: "✅ concluída", failed: "❌ falhou", running: "▶️ rodando", queued: "⏳ na fila", skipped: "⏭ pulada", cancelled: "⏹ cancelada" };
+const RUN_STATUS = { issue_created: "📝 issue criada", completed: "✅ 已完成", failed: "❌ 失败", running: "▶️ rodando", queued: "⏳ 排队中", skipped: "⏭ pulada", cancelled: "⏹ 已取消" };
 
 // ---------- cron ----------
 
@@ -82,12 +82,12 @@ export function occurrences(expr, tz, fromMs, hours) {
 function when(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
-  const fmt = (o) => d.toLocaleString("pt-BR", { timeZone: TZ, ...o });
-  const day = (x) => x.toLocaleDateString("pt-BR", { timeZone: TZ });
+  const fmt = (o) => d.toLocaleString("zh-CN", { timeZone: TZ, ...o });
+  const day = (x) => x.toLocaleDateString("zh-CN", { timeZone: TZ });
   const today = new Date();
   const tomorrow = new Date(Date.now() + 86400_000);
   const hm = fmt({ hour: "2-digit", minute: "2-digit" });
-  if (day(d) === day(today)) return `hoje ${hm}`;
+  if (day(d) === day(today)) return `今天 ${hm}`;
   if (day(d) === day(tomorrow)) return `amanhã ${hm}`;
   if (d < today && day(d) === day(new Date(Date.now() - 86400_000))) return `ontem ${hm}`;
   return `${fmt({ day: "2-digit", month: "2-digit" })} ${hm}`;
@@ -113,8 +113,8 @@ export function renderScheduleList(el, { data, query, filter, selectedId }) {
         .map((s) => {
           const a = agents.get(s.agentId);
           return `<li class="sched ${s.id === selectedId ? "selected" : ""} ${s.status}" data-sched="${s.id}">
-            <span class="when">${s.status === "paused" ? "⏸ pausada" : esc(when(s.nextRunAt))}</span>
-            <span class="name">${s.lastRun?.status === "failed" && !s.lastRun.acked ? `<i class="fail-dot" title="Última execução falhou"></i>` : ""}${esc(s.title)}<small>${a ? `${esc(a.emoji)} ${esc(a.name)} · ` : ""}${esc(cadence(s))}</small></span></li>`;
+            <span class="when">${s.status === "paused" ? "⏸ 已暂停" : esc(when(s.nextRunAt))}</span>
+            <span class="name">${s.lastRun?.status === "failed" && !s.lastRun.acked ? `<i class="fail-dot" title="Última execução 失败"></i>` : ""}${esc(s.title)}<small>${a ? `${esc(a.emoji)} ${esc(a.name)} · ` : ""}${esc(cadence(s))}</small></span></li>`;
         })
         .join("")
     : `<li class="empty">Nenhuma tarefa encontrada.</li>`;
@@ -136,35 +136,35 @@ export function renderAgenda(el, { data, selectedId }) {
   const fails = data.schedules.filter((s) => s.lastRun?.status === "failed" && !s.lastRun.acked).length;
   const in24 = rows.reduce((n, r) => n + r.occ.length, 0);
   const next = rows.filter((r) => r.occ.length).sort((a, b) => a.occ[0] - b.occ[0])[0];
-  const startHour = new Date(now).toLocaleString("pt-BR", { timeZone: TZ, hour: "2-digit" });
+  const startHour = new Date(now).toLocaleString("zh-CN", { timeZone: TZ, hour: "2-digit" });
   const hourMarks = Array.from({ length: H / 3 + 1 }, (_, i) => {
     const t = now + i * 3 * 3600_000;
-    return `<span style="left:${(i * 3 * 100) / H}%">${new Date(t).toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit" })}h</span>`;
+    return `<span style="left:${(i * 3 * 100) / H}%">${new Date(t).toLocaleTimeString("zh-CN", { timeZone: TZ, hour: "2-digit" })}h</span>`;
   }).join("");
 
   const row = ({ s, occ }) => {
     const a = agents.get(s.agentId);
     const ticks = occ
-      .map((t) => `<i style="left:${((t - now) / (H * 3600_000)) * 100}%" title="${new Date(t).toLocaleString("pt-BR", { timeZone: TZ })}"></i>`)
+      .map((t) => `<i style="left:${((t - now) / (H * 3600_000)) * 100}%" title="${new Date(t).toLocaleString("zh-CN", { timeZone: TZ })}"></i>`)
       .join("");
     return `<div class="arow ${s.status} ${s.id === selectedId ? "selected" : ""}" data-sched="${s.id}">
-      <div class="atitle"><b>${s.lastRun?.status === "failed" && !s.lastRun.acked ? `<i class="fail-dot" title="Última execução falhou"></i>` : ""}${esc(s.title)}</b><small>${a ? `${esc(a.emoji)} ${esc(a.name)}` : "—"} · ${esc(cadence(s))}</small></div>
-      <div class="anext">${s.status === "paused" ? `<span class="badge paused">pausada</span>` : esc(when(s.nextRunAt))}</div>
+      <div class="atitle"><b>${s.lastRun?.status === "failed" && !s.lastRun.acked ? `<i class="fail-dot" title="Última execução 失败"></i>` : ""}${esc(s.title)}</b><small>${a ? `${esc(a.emoji)} ${esc(a.name)}` : "—"} · ${esc(cadence(s))}</small></div>
+      <div class="anext">${s.status === "paused" ? `<span class="badge paused">已暂停</span>` : esc(when(s.nextRunAt))}</div>
       <div class="atrack">${ticks}</div>
     </div>`;
   };
   const sorted = rows.sort((a, b) => (a.s.status === b.s.status ? (a.occ[0] ?? 9e15) - (b.occ[0] ?? 9e15) : a.s.status === "active" ? -1 : 1));
   el.innerHTML = `
-    <div class="agenda-top"><h2>📅 Agenda das próximas 24 horas</h2><div class="row">${fails ? `<button type="button" data-ack-all>📦 Arquivar todas as falhas (${fails})</button>` : ""}<button type="button" class="primary" data-new-sched>➕ Nova tarefa agendada</button></div></div>
+    <div class="agenda-top"><h2>📅 日程 das próximas 24 horas</h2><div class="row">${fails ? `<button type="button" data-ack-all>📦 归档 todas as falhas (${fails})</button>` : ""}<button type="button" class="primary" data-new-sched>➕ 新建定时任务</button></div></div>
     <div class="agenda-head">
       <div class="kpi"><b>${active.length}</b><span>tarefas ativas</span></div>
       <div class="kpi"><b>${data.schedules.length - active.length}</b><span>pausadas</span></div>
       <div class="kpi ${fails ? "bad" : ""}"><b>${fails}</b><span>falhas pendentes</span></div>
       <div class="kpi"><b>${in24}</b><span>execuções nas próximas 24 h</span></div>
-      <div class="kpi wide"><b>${next ? new Date(next.occ[0]).toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }) : "—"}</b><span>${next ? `próxima: ${esc(next.s.title)}` : "nenhuma nas próximas 24 h"}</span></div>
+      <div class="kpi wide"><b>${next ? new Date(next.occ[0]).toLocaleTimeString("zh-CN", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }) : "—"}</b><span>${next ? `próxima: ${esc(next.s.title)}` : "nenhuma nas próximas 24 h"}</span></div>
     </div>
     <div class="agenda-grid">
-      <div class="arow header"><div class="atitle">Tarefa · agente · frequência</div><div class="anext">Próxima</div><div class="atrack scale">${hourMarks}<em style="left:0" title="agora (${startHour}h)"></em></div></div>
+      <div class="arow header"><div class="atitle">任务 · agente · frequência</div><div class="anext">Próxima</div><div class="atrack scale">${hourMarks}<em style="left:0" title="agora (${startHour}h)"></em></div></div>
       ${sorted.map(row).join("")}
     </div>
     <p class="muted small">Horários de Brasília (Rio). Cada traço é uma execução prevista nas próximas 24 h.</p>`;
@@ -188,20 +188,20 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
 
   function renderCreate() {
     el.hidden = false;
-    el.innerHTML = `<button class="close" type="button" aria-label="Fechar">✕</button>
-      <div class="eyebrow">⏰ Nova tarefa agendada</div><h2>Criar tarefa agendada</h2>
+    el.innerHTML = `<button class="close" type="button" aria-label="关闭">✕</button>
+      <div class="eyebrow">⏰ 新建定时任务</div><h2>Criar 定时任务</h2>
       <form class="sched-form">
-        <label>Título<input name="title" required maxlength="200" placeholder="Ex.: Relatório semanal de leads" /></label>
-        <label>Agente responsável<select name="agentId" required>${agentOptions()}</select></label>
-        <label>Instruções para o agente<textarea name="description" rows="7" required placeholder="O que o agente deve fazer a cada execução"></textarea></label>
+        <label>标题<input name="title" required maxlength="200" placeholder="例如：每周线索报告" /></label>
+        <label>智能体 responsável<select name="agentId" required>${agentOptions()}</select></label>
+        <label>智能体指令<textarea name="description" rows="7" required placeholder="描述每次运行要做的事"></textarea></label>
         <div class="grid2">
           <label>Modo<select name="mode"><option value="create_issue">Criar uma issue por execução</option><option value="run_only">Só executar (sem issue)</option></select></label>
-          <label>Título das issues<input name="titleTemplate" placeholder="Relatório {{date}}" /></label>
+          <label>任务标题<input name="titleTemplate" placeholder="报告 {{date}}" /></label>
         </div>
-        <label>Quando (cron)<input name="cron" class="mono" placeholder="0 9 * * 1-5" /></label>
+        <label>运行时间（cron）<input name="cron" class="mono" placeholder="0 9 * * 1-5" /></label>
         <div class="cron-preview muted small"></div>
         ${CRON_HELP}
-        <button type="submit" class="primary wide">⏰ Criar tarefa agendada</button>
+        <button type="submit" class="primary wide">⏰ Criar 定时任务</button>
       </form>`;
     el.querySelector(".close").onclick = onClose;
     const form = el.querySelector("form");
@@ -217,7 +217,7 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
           title: f.title.value, agentId: f.agentId.value, description: f.description.value, mode: f.mode.value,
           titleTemplate: f.titleTemplate.value, cron: f.cron.value.trim(), tz: TZ,
         });
-        toast("Tarefa agendada criada.");
+        toast("已创建定时任务。");
         onChanged();
         id = out.id;
         detail = null;
@@ -240,27 +240,27 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
                 ? `<input name="cron" class="mono" value="${esc(t.cron ?? "")}" /><span class="muted small">${esc(cronText(t.cron))}</span>`
                 : `<span>${esc(t.kind)}</span>`}
               <label class="check inline"><input type="checkbox" name="enabled" ${t.enabled ? "checked" : ""}/> ativo</label>
-              <button type="submit">Salvar</button><button type="button" class="danger" data-act="trig-del">Excluir</button></form>`)
+              <button type="submit">保存</button><button type="button" class="danger" data-act="trig-del">删除</button></form>`)
             .join("")
         : `<p class="muted">Sem horários: a tarefa só roda manualmente.</p>`
-      : `<p class="muted">Carregando horários…</p>`;
+      : `<p class="muted">正在加载 horários…</p>`;
     return `
       <form class="sched-form sched-edit">
-        <label>Título<input name="title" required maxlength="200" value="${esc(s.title)}" /></label>
-        <label>Agente responsável<select name="agentId">${agentOptions(s.agentId)}</select></label>
-        <label>Instruções para o agente<textarea name="description" rows="8">${esc(detail?.description ?? "")}</textarea></label>
+        <label>标题<input name="title" required maxlength="200" value="${esc(s.title)}" /></label>
+        <label>智能体 responsável<select name="agentId">${agentOptions(s.agentId)}</select></label>
+        <label>智能体指令<textarea name="description" rows="8">${esc(detail?.description ?? "")}</textarea></label>
         <div class="grid2">
           <label>Modo<select name="mode"><option value="create_issue" ${s.mode === "create_issue" ? "selected" : ""}>Criar uma issue por execução</option><option value="run_only" ${s.mode === "run_only" ? "selected" : ""}>Só executar (sem issue)</option></select></label>
-          <label>Título das issues<input name="titleTemplate" value="${esc(detail?.titleTemplate ?? "")}" /></label>
+          <label>任务标题<input name="titleTemplate" value="${esc(detail?.titleTemplate ?? "")}" /></label>
         </div>
-        <div class="row"><button type="button" data-act="cancel-edit">Cancelar</button><button type="submit" class="primary">💾 Salvar</button></div>
+        <div class="row"><button type="button" data-act="cancel-edit">取消</button><button type="submit" class="primary">💾 保存</button></div>
       </form>
       <div class="section-title">Horários</div>
       ${trig}
-      <form class="trig-add"><input name="cron" class="mono" placeholder="novo cron, ex.: 0 9 * * 1-5" required /><button type="submit">➕ Adicionar horário</button></form>
+      <form class="trig-add"><input name="cron" class="mono" placeholder="novo cron, ex.: 0 9 * * 1-5" required /><button type="submit">➕ 添加时间</button></form>
       ${CRON_HELP}
       <div class="section-title danger-title">Zona de risco</div>
-      <button type="button" class="danger" data-act="delete">🗑️ Excluir tarefa agendada</button>`;
+      <button type="button" class="danger" data-act="delete">🗑️ 删除 定时任务</button>`;
   }
 
   function render() {
@@ -273,20 +273,20 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     const auth = getAuth();
     const trig = s.triggers.map((t) => (t.cron ? `<code>${esc(t.cron)}</code> ${esc(t.tz ?? "")}` : esc(t.kind))).join("<br>");
     let body;
-    if (!auth.enabled) body = `<p class="muted">Histórico e ações estão desligados neste servidor.</p>`;
-    else if (!auth.auth) body = `<button type="button" class="primary wide" data-act="login">🔐 Entrar para ver histórico e ações</button>`;
-    else if (!detail) body = `<p class="muted">Carregando…</p>`;
+    if (!auth.enabled) body = `<p class="muted">历史 e ações estão desligados neste servidor.</p>`;
+    else if (!auth.auth) body = `<button type="button" class="primary wide" data-act="login">🔐 登录查看运行历史和操作</button>`;
+    else if (!detail) body = `<p class="muted">正在加载…</p>`;
     else if (detail.error) body = `<p class="error">${esc(detail.error)}</p>`;
     else if (editing) body = renderEdit(s);
     else
       body = `
         <div class="run-actions">
           <button type="button" class="primary" data-act="trigger">▶ Rodar agora</button>
-          ${s.status === "active" ? `<button type="button" data-act="pause">⏸ Pausar</button>` : `<button type="button" data-act="resume">▶ Retomar</button>`}
-          <button type="button" data-act="edit">✏️ Editar</button>
+          ${s.status === "active" ? `<button type="button" data-act="pause">⏸ 暂停</button>` : `<button type="button" data-act="resume">▶ 恢复</button>`}
+          <button type="button" data-act="edit">✏️ 编辑</button>
         </div>
-        ${detail.description ? `<div class="section-title">Instruções</div><div class="desc-box">${esc(detail.description)}</div>` : ""}
-        <div class="section-title">Histórico de execuções</div>
+        ${detail.description ? `<div class="section-title">指令</div><div class="desc-box">${esc(detail.description)}</div>` : ""}
+        <div class="section-title">历史 de 次运行</div>
         ${detail.runs.length
           ? detail.runs
               .map((r) => `<div class="run ${r.status === "failed" ? (r.acked ? "acked" : "failed") : ""}"><div class="run-top"><span class="pill">${RUN_STATUS[r.status] ?? esc(r.status)}${r.status === "failed" && r.acked ? " · 📦 arquivada" : ""}</span><small class="muted">${esc(when(r.at))} · ${esc(r.source)}</small></div>
@@ -295,17 +295,17 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
                 ${r.status === "failed" ? `<div class="run-actions">
                   <button type="button" data-act="trigger">🔁 Rodar de novo</button>
                   ${r.issue && !["done", "cancelled"].includes(r.issue.status) ? `<button type="button" class="primary" data-act="issue-done" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">✅ Concluir issue</button>
-                  <button type="button" class="danger" data-act="issue-cancel" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">🚫 Cancelar issue</button>` : ""}
-                  <button type="button" data-act="ack" data-run="${r.id}" data-ack="${r.acked ? "0" : "1"}">${r.acked ? "↩️ Desarquivar falha" : "📦 Arquivar falha"}</button>
+                  <button type="button" class="danger" data-act="issue-cancel" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">🚫 取消 issue</button>` : ""}
+                  <button type="button" data-act="ack" data-run="${r.id}" data-ack="${r.acked ? "0" : "1"}">${r.acked ? "↩️ Desarquivar falha" : "📦 归档 falha"}</button>
                 </div>` : ""}</div>`)
               .join("")
           : `<p class="muted">Ainda não rodou.</p>`}`;
-    el.innerHTML = `<button class="close" type="button" aria-label="Fechar">✕</button>
-      <div class="eyebrow">⏰ Tarefa agendada</div>
+    el.innerHTML = `<button class="close" type="button" aria-label="关闭">✕</button>
+      <div class="eyebrow">⏰ 任务 agendada</div>
       <h2>${esc(s.title)}</h2>
-      <div class="meta"><span class="badge ${s.status}">${s.status === "active" ? "ativa" : "pausada"}</span> · ${s.mode === "create_issue" ? "cria uma issue a cada execução" : "só executa (sem issue)"}</div>
+      <div class="meta"><span class="badge ${s.status}">${s.status === "active" ? "已启用" : "已暂停"}</span> · ${s.mode === "create_issue" ? "cria uma issue a cada execução" : "só executa (sem issue)"}</div>
       <dl class="facts">
-        <dt>Responsável</dt><dd>${a ? `<a href="#" data-act="agent">${esc(a.emoji)} ${esc(a.name)}</a> <small class="muted">💻 ${esc(a.machine)}</small>` : "—"}</dd>
+        <dt>负责人</dt><dd>${a ? `<a href="#" data-act="agent">${esc(a.emoji)} ${esc(a.name)}</a> <small class="muted">💻 ${esc(a.machine)}</small>` : "—"}</dd>
         <dt>Frequência</dt><dd>${esc(cadence(s))}<br><small class="muted">${trig}</small></dd>
         <dt>Próxima</dt><dd>${s.status === "active" ? esc(when(s.nextRunAt)) : "—"}</dd>
         <dt>Última</dt><dd>${esc(when(s.lastRunAt))}${s.lastRun ? ` · ${RUN_STATUS[s.lastRun.status] ?? esc(s.lastRun.status)}` : ""}</dd>
@@ -367,7 +367,7 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     }
     if (act === "ack") {
       const on = b.dataset.ack === "1";
-      if (await run(() => api("/api/acks", { id: b.dataset.run, ack: on }), on ? "Falha arquivada: saiu das pendências." : "Falha desarquivada.")) {
+      if (await run(() => api("/api/acks", { id: b.dataset.run, ack: on }), on ? "Falha arquivada: saiu das 待处理事项s." : "Falha desarquivada.")) {
         detail = null;
         render();
         load();
@@ -376,8 +376,8 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     }
     if (act === "issue-done" || act === "issue-cancel") {
       const status = act === "issue-done" ? "done" : "cancelled";
-      if (!confirm(`${status === "done" ? "Concluir" : "Cancelar"} ${b.dataset.label}?`)) return;
-      if (await run(() => api(`/api/issues/${b.dataset.issue}/status`, { status }), `${b.dataset.label} ${status === "done" ? "concluída" : "cancelada"}.`)) {
+      if (!confirm(`${status === "done" ? "Concluir" : "取消"} ${b.dataset.label}?`)) return;
+      if (await run(() => api(`/api/issues/${b.dataset.issue}/status`, { status }), `${b.dataset.label} ${status === "done" ? "已完成" : "已取消"}.`)) {
         detail = null;
         render();
         load();
@@ -386,22 +386,22 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     }
     if (act === "trig-del") {
       const tid = b.closest("form").dataset.trig;
-      if (!confirm("Excluir este horário?")) return;
+      if (!confirm("删除 este horário?")) return;
       if (await run(() => api(`/api/schedules/${id}/triggers/${tid}/delete`, {}), "Horário excluído.")) loadTriggers();
       return;
     }
     if (act === "delete") {
-      const typed = prompt(`Excluir apaga a tarefa "${s.title}" e seus horários. Para confirmar, digite EXCLUIR:`);
+      const typed = prompt(`删除 apaga a tarefa "${s.title}" e seus horários. Para confirmar, digite EXCLUIR:`);
       if (typed !== "EXCLUIR") return typed !== null && toast("Confirmação não confere; nada foi excluído.", false);
-      if (await run(() => api(`/api/schedules/${id}/delete`, {}), "Tarefa agendada excluída.")) onClose();
+      if (await run(() => api(`/api/schedules/${id}/delete`, {}), "任务 agendada excluída.")) onClose();
       return;
     }
-    const ask = { trigger: `Rodar "${s.title}" agora?`, pause: `Pausar "${s.title}"? Ela para de rodar até ser retomada.`, resume: `Retomar "${s.title}"?` }[act];
+    const ask = { trigger: `Rodar "${s.title}" agora?`, pause: `暂停 "${s.title}"? Ela para de rodar até ser retomada.`, resume: `恢复 "${s.title}"?` }[act];
     if (!ask || !confirm(ask)) return;
     b.disabled = true;
     const okRun = await run(
       () => (act === "trigger" ? api(`/api/schedules/${id}/trigger`, {}) : api(`/api/schedules/${id}/status`, { status: act === "pause" ? "paused" : "active" })),
-      act === "trigger" ? "Execução disparada; o agente vai começar." : act === "pause" ? "Tarefa pausada." : "Tarefa retomada.",
+      act === "trigger" ? "Execução disparada; o agente vai começar." : act === "pause" ? "任务 已暂停." : "任务 retomada.",
     );
     if (okRun && act !== "trigger") s.status = act === "pause" ? "paused" : "active";
     detail = null;
@@ -423,7 +423,7 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
       if (v.description.value !== (detail?.description ?? "")) body.description = v.description.value;
       if (v.titleTemplate.value !== (detail?.titleTemplate ?? "")) body.titleTemplate = v.titleTemplate.value;
       if (!Object.keys(body).length) return toast("Nada mudou.");
-      if (await run(() => api(`/api/schedules/${id}/update`, body), "Tarefa atualizada.")) {
+      if (await run(() => api(`/api/schedules/${id}/update`, body), "任务 atualizada.")) {
         Object.assign(s, body.title ? { title: body.title } : {}, body.agentId ? { agentId: body.agentId } : {}, body.mode ? { mode: body.mode } : {});
         editing = false;
         detail = null;

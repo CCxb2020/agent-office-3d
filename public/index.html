@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
-    <title>Escritório de Agentes · Agent Office</title>
+    <title>智能体办公室 · Agent Office</title>
     <link rel="icon" href="/brand/logo.svg" />
     <link rel="stylesheet" href="/styles.css" />
     <script type="importmap">
@@ -20,58 +20,58 @@
     <header class="topbar">
       <div class="brand">
         <img class="logo-img" src="/brand/logo.svg" alt="Agent Office" />
-        <div><b>Escritório de Agentes</b><small>Agent Office · Multica</small></div>
+        <div><b>智能体办公室</b><small>Agent Office · Multica</small></div>
       </div>
       <div id="stats" class="chips"></div>
       <div class="spacer"></div>
-      <nav class="segmented" id="views" aria-label="Visão">
+      <nav class="segmented" id="views" aria-label="视图">
         <button type="button" data-view="3d" aria-pressed="true">🧊 3D</button>
-        <button type="button" data-view="2d" aria-pressed="false">☰ Lista</button>
-        <button type="button" data-view="agenda" aria-pressed="false">📅 Agenda</button>
-        <button type="button" data-view="history" aria-pressed="false" title="Execuções recentes, agendadas que rodaram e todas as issues por ordem de atividade">📜 Histórico</button>
+        <button type="button" data-view="2d" aria-pressed="false">☰ 列表</button>
+        <button type="button" data-view="agenda" aria-pressed="false">📅 日程</button>
+        <button type="button" data-view="history" aria-pressed="false" title="近期运行、定时运行和任务活动">📜 历史</button>
       </nav>
-      <label class="pick" title="Qual prédio ver: a sede com todos, um prédio por máquina/runtime, ou só um">
-        🏢 <select id="campus" aria-label="Prédio"><option value="sede">Sede · todos</option></select>
+      <label class="pick" title="按运行时筛选办公楼">
+        🏢 <select id="campus" aria-label="办公楼"><option value="sede">总部 · 全部</option></select>
       </label>
-      <nav class="segmented" id="scene-mode" aria-label="Cena 3D">
-        <button type="button" data-mode="facade" aria-pressed="true">🏙️ Orla</button>
-        <button type="button" data-mode="interior" aria-pressed="false">🏢 Escritório</button>
+      <nav class="segmented" id="scene-mode" aria-label="3D 场景">
+        <button type="button" data-mode="facade" aria-pressed="true">🏙️ 海滨</button>
+        <button type="button" data-mode="interior" aria-pressed="false">🏢 办公室</button>
       </nav>
-      <button id="meet-btn" type="button" title="Reuniões de agentes: chamar vários agentes para uma mesma tarefa">🤝 <span class="lbl">Reunião</span> <span id="meet-count" class="count-badge" hidden></span></button>
-      <button id="palette-btn" type="button" title="Busca rápida (Ctrl+K)">🔎 <kbd>Ctrl K</kbd></button>
-      <button id="feed-btn" type="button" title="Feed ao vivo">📰 <span id="feed-count" class="count-badge" hidden></span></button>
+      <button id="meet-btn" type="button" title="邀请多个智能体处理同一任务">🤝 <span class="lbl">会议</span> <span id="meet-count" class="count-badge" hidden></span></button>
+      <button id="palette-btn" type="button" title="快速搜索 (Ctrl+K)">🔎 <kbd>Ctrl K</kbd></button>
+      <button id="feed-btn" type="button" title="实时动态">📰 <span id="feed-count" class="count-badge" hidden></span></button>
       <details class="settings">
-        <summary title="Ajustes da cena">⚙️</summary>
+        <summary title="场景设置">⚙️</summary>
         <div class="settings-pop">
-          <div class="set-row"><span>Hora da cena</span><label class="clock" title="Hora do Rio que define o céu, o sol e as luzes da cena">
+          <div class="set-row"><span>场景时间</span><label class="clock" title="里约当地时间，控制场景光照">
         <span id="clock-icon">☀️</span>
         <span id="clock-time">--:--</span>
-        <select id="clock-mode" aria-label="Hora da cena">
-          <option value="live">Ao vivo</option>
-          <option value="6.4">Amanhecer</option>
-          <option value="12">Meio-dia</option>
-          <option value="17.9">Pôr do sol</option>
-          <option value="21">Noite</option>
+        <select id="clock-mode" aria-label="场景时间">
+          <option value="live">实时</option>
+          <option value="6.4">日出</option>
+          <option value="12">正午</option>
+          <option value="17.9">日落</option>
+          <option value="21">夜晚</option>
         </select>
       </label></div>
-          <div class="set-row"><span>Cenário</span><select id="theme" aria-label="Tema do cenário"><option value="premium">🌴 Cobertura premium</option><option value="classico">🏙️ Orla clássica</option><option value="minimal">⚪ Minimalista (leve)</option></select></div>
-          <div class="set-row"><span>Avatares</span><select id="avatar-style" aria-label="Avatar"><option value="pessoa">🧑 Pessoas</option><option value="robo">🤖 Robôs</option></select></div>
-          <div class="set-row"><span>Qualidade</span><select id="quality" aria-label="Qualidade"><option value="alta">✨ Alta</option><option value="leve">⚡ Leve</option></select></div>
+          <div class="set-row"><span>场景</span><select id="theme" aria-label="场景主题"><option value="premium">🌴 屋顶全景</option><option value="classico">🏙️ 经典海滨</option><option value="minimal">⚪ 简洁模式</option></select></div>
+          <div class="set-row"><span>角色</span><select id="avatar-style" aria-label="角色"><option value="pessoa">🧑 人物</option><option value="robo">🤖 机器人</option></select></div>
+          <div class="set-row"><span>画质</span><select id="quality" aria-label="画质"><option value="alta">✨ 高</option><option value="leve">⚡ 流畅</option></select></div>
         </div>
       </details>
-      <button id="auth" type="button" hidden>🔐 Entrar</button>
+      <button id="auth" type="button" hidden>🔐 登录</button>
     </header>
     <main>
       <aside>
         <div class="side-tabs" role="tablist">
-          <button type="button" role="tab" data-side="agents" aria-selected="true">Agentes <span id="count-agents"></span></button>
-          <button type="button" role="tab" data-side="schedules" aria-selected="false">Agendadas <span id="count-schedules"></span></button>
+          <button type="button" role="tab" data-side="agents" aria-selected="true">智能体 <span id="count-agents"></span></button>
+          <button type="button" role="tab" data-side="schedules" aria-selected="false">定时任务 <span id="count-schedules"></span></button>
         </div>
-        <input id="search" type="search" placeholder="Buscar agente ou issue…" />
-        <div id="filters" role="group" aria-label="Filtrar"></div>
+        <input id="search" type="search" placeholder="搜索智能体或任务…" />
+        <div id="filters" role="group" aria-label="筛选"></div>
         <ul id="agent-list"></ul>
         <ul id="schedule-list" hidden></ul>
-        <footer class="side-foot"><span id="updated">carregando…</span></footer>
+        <footer class="side-foot"><span id="updated">加载中…</span></footer>
       </aside>
       <section id="stage">
         <div id="scene"></div>
@@ -83,16 +83,16 @@
         <div id="sched-detail" class="drawer" hidden></div>
         <div id="working-now" class="working-now" hidden></div>
         <div id="legend" class="legend">
-          <span><i class="dot working"></i>Trabalhando · na mesa</span>
-          <span><i class="dot idle"></i>Ocioso · copa</span>
-          <span><i class="dot blocked"></i>Bloqueado · pendências</span>
-          <span><i class="dot offline"></i>Offline · desligados</span>
+          <span><i class="dot working"></i>工作中 · 工位</span>
+          <span><i class="dot idle"></i>空闲 · 休息区</span>
+          <span><i class="dot blocked"></i>受阻 · 等待区</span>
+          <span><i class="dot offline"></i>离线 · 离线区</span>
         </div>
         <div id="feed" class="feed" hidden></div>
         <div id="error" hidden></div>
       </section>
     </main>
-    <footer class="credits">Modelos 3D: Kenney (CC0) · RobotExpressive por Quaternius (CC0)</footer>
+    <footer class="credits">3D 模型: Kenney (CC0) · RobotExpressive 由 Quaternius 制作 (CC0)</footer>
     <script type="module" src="/app.js"></script>
   </body>
 </html>

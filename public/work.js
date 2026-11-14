@@ -18,12 +18,12 @@ export function workTitle(w) {
 /** Dica completa (tooltip): projeto, pedido, quem pediu e o que está fazendo agora. */
 export function workHint(w) {
   return [
-    w.issue?.project ? `Projeto: ${w.issue.project}` : "",
+    w.issue?.project ? `项目： ${w.issue.project}` : "",
     w.issue ? `${w.issue.identifier} · ${w.issue.title}` : "",
-    w.about ? `Pedido: ${w.about}` : "",
-    w.by ? `Por: ${w.by}` : "",
-    w.now ? `Agora: ${w.now}` : "",
-    "Clique para ver os detalhes",
+    w.about ? `发起人： ${w.about}` : "",
+    w.by ? `执行人： ${w.by}` : "",
+    w.now ? `现在: ${w.now}` : "",
+    "点击查看详情",
   ].filter(Boolean).join(" · ");
 }
 
@@ -45,6 +45,6 @@ export function workSummary(agent) {
   const groups = new Map();
   for (const w of active) groups.set(workIcon(w), (groups.get(workIcon(w)) ?? 0) + 1);
   const parts = [...groups].map(([icon, n]) => `${icon}${n}`);
-  if (queued) parts.push(`🕓${queued} na fila`);
+  if (queued) parts.push(`🕓${queued} 排队中`);
   return { n: active.length, queued, text: active.length > 1 || queued ? parts.join(" · ") : "" };
 }

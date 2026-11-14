@@ -8,7 +8,7 @@ test("uma execução só: sem resumo", () => {
 
 test("várias ao mesmo tempo: conta por tipo e a fila à parte", () => {
   const a = { work: [{ kind: "chat", label: "Chat com Ana" }, { kind: "chat" }, { kind: "direct", issue: { identifier: "T-2", title: "b" } }, { kind: "autopilot" }, { kind: "direct", queued: true }] };
-  assert.deepEqual(workSummary(a), { n: 4, queued: 1, text: "💬2 · 📋1 · ⏰1 · 🕓1 na fila" });
+  assert.deepEqual(workSummary(a), { n: 4, queued: 1, text: "💬2 · 📋1 · ⏰1 · 🕓1 排队中" });
 });
 
 test("títulos e ícones", () => {

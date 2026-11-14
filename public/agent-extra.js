@@ -6,7 +6,7 @@ import { HAIRS, OUTFITS, SKINS, hex } from "./looks.js";
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const TZ = "America/Sao_Paulo";
-const when = (iso) => (iso ? new Date(iso).toLocaleString("pt-BR", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
+const when = (iso) => (iso ? new Date(iso).toLocaleString("zh-CN", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
 const THINKING = [["", "Padrão do runtime"], ["off", "Desligado"], ["minimal", "Mínimo"], ["low", "Baixo"], ["medium", "Médio"], ["high", "Alto"], ["xhigh", "Muito alto"], ["max", "Máximo"]];
 
 /** Markdown mínimo e seguro: escapa tudo e só então aplica negrito, código e quebras. */
@@ -24,10 +24,10 @@ export function renderConversation(tb, { agent, api, flash }) {
   let timer = null;
   let alive = true;
   tb.innerHTML = `<p class="muted small">Fale com <b>${esc(agent.name)}</b> por aqui: cada mensagem vira um comentário na issue de conversa do agente, que acorda e responde. O fio fica salvo no Multica.</p>
-    <div class="chat-log"><p class="muted">Carregando…</p></div>
+    <div class="chat-log"><p class="muted">正在加载…</p></div>
     <form class="chat-send">
       <textarea rows="3" required placeholder="Escreva para o agente… (Ctrl+Enter envia)"></textarea>
-      <div class="row"><span class="muted small chat-state"></span><button type="submit" class="primary">Enviar</button></div>
+      <div class="row"><span class="muted small chat-state"></span><button type="submit" class="primary">发送</button></div>
     </form>`;
   const log = tb.querySelector(".chat-log");
   const state = tb.querySelector(".chat-state");
@@ -80,7 +80,7 @@ export function renderConversation(tb, { agent, api, flash }) {
 
 export function renderChats(tb, { agent, api }) {
   let alive = true;
-  tb.innerHTML = `<p class="muted small">Conversas abertas no app do Multica com este agente. Aqui aparecem as respostas e os passos do agente; o app do Multica não deixa abrir chat novo por fora — para falar com ele pelo painel, use a aba <b>💬 Conversa</b>.</p><div class="chat-sessions"><p class="muted">Carregando…</p></div>`;
+  tb.innerHTML = `<p class="muted small">Conversas 待处理 no app do Multica com este agente. Aqui aparecem as respostas e os passos do agente; o app do Multica não deixa abrir chat novo por fora — para falar com ele pelo painel, use a aba <b>💬 Conversa</b>.</p><div class="chat-sessions"><p class="muted">正在加载…</p></div>`;
   const box = tb.querySelector(".chat-sessions");
   api(`/api/agents/${agent.id}/chats`)
     .then(({ sessions }) => {
@@ -101,7 +101,7 @@ export function renderChats(tb, { agent, api }) {
     const out = b.nextElementSibling;
     out.hidden = !out.hidden;
     if (out.hidden || out.dataset.loaded) return;
-    out.innerHTML = `<p class="muted">Carregando…</p>`;
+    out.innerHTML = `<p class="muted">正在加载…</p>`;
     try {
       const { messages } = await api(`/api/runs/${b.dataset.run}/messages`);
       out.dataset.loaded = "1";
@@ -119,7 +119,7 @@ export function renderChats(tb, { agent, api }) {
         } else if (m.type === "tool") tools.push(`<div class="step tool">🔧 <b>${esc(m.tool)}</b> <code>${esc(m.text)}</code></div>`);
       }
       flush();
-      out.innerHTML = parts.length ? parts.join("") : `<p class="muted">Sem mensagens registradas.</p>`;
+      out.innerHTML = parts.length ? parts.join("") : `<p class="muted">暂无消息。</p>`;
     } catch (err) {
       out.innerHTML = `<p class="error">${esc(err.message)}</p>`;
     }
@@ -131,7 +131,7 @@ export function renderChats(tb, { agent, api }) {
 
 export function renderConfig(tb, { agent, api, flash, onChanged }) {
   let alive = true;
-  tb.innerHTML = `<p class="muted">Carregando configuração…</p>`;
+  tb.innerHTML = `<p class="muted">正在加载配置…</p>`;
   api(`/api/agents/${agent.id}/details`)
     .then((d) => alive && draw(d))
     .catch((e) => (tb.innerHTML = `<p class="error">${esc(e.message)}</p>`));
@@ -146,38 +146,38 @@ export function renderConfig(tb, { agent, api, flash, onChanged }) {
     tb.innerHTML = `
       <form class="cfg">
         <div class="section-title">Identidade</div>
-        <label>Nome<input name="name" maxlength="120" value="${esc(a.name)}" required /></label>
-        <label>Descrição<textarea name="description" rows="2" maxlength="2000">${esc(a.description)}</textarea></label>
-        <label>Instruções <small class="muted">(prompt de sistema do agente)</small><textarea name="instructions" rows="12" class="mono">${esc(a.instructions)}</textarea></label>
+        <label>名称<input name="name" maxlength="120" value="${esc(a.name)}" required /></label>
+        <label>描述<textarea name="description" rows="2" maxlength="2000">${esc(a.description)}</textarea></label>
+        <label>指令 <small class="muted">(prompt de sistema do agente)</small><textarea name="instructions" rows="12" class="mono">${esc(a.instructions)}</textarea></label>
         <div class="section-title">Execução</div>
         <div class="grid2">
           <label>Runtime / máquina<select name="runtimeId">${rtOpts(a.runtimeId)}</select></label>
-          <label>Modelo<input name="model" value="${esc(a.model)}" placeholder="padrão do runtime" /></label>
+          <label>模型<input name="model" value="${esc(a.model)}" placeholder="运行时默认设置" /></label>
           <label>Raciocínio<select name="thinkingLevel">${THINKING.map(([v, l]) => `<option value="${v}" ${v === a.thinkingLevel ? "selected" : ""}>${l}</option>`).join("")}</select></label>
           <label>Runs simultâneas<input name="maxConcurrent" type="number" min="1" max="50" value="${a.maxConcurrent ?? 1}" /></label>
           <label>Quem pode acionar<select name="permission">
             <option value="workspace" ${a.permissionMode !== "private" ? "selected" : ""}>Todo o workspace</option>
             <option value="private" ${a.permissionMode === "private" ? "selected" : ""}>Só o dono</option></select></label>
         </div>
-        <button type="submit" class="primary wide">💾 Salvar alterações</button>
+        <button type="submit" class="primary wide">💾 保存 alterações</button>
       </form>
       <form class="cfg-skills">
         <div class="section-title">Skills do workspace (${workspaceSkills.length})</div>
         ${workspaceSkills.length
           ? workspaceSkills.map((s) => `<label class="check"><input type="checkbox" value="${s.id}" ${assigned.has(s.id) ? "checked" : ""}/> <b>${esc(s.name)}</b><small class="muted">${esc(s.description)}</small></label>`).join("")
           : `<p class="muted">Nenhuma skill no workspace.</p>`}
-        ${workspaceSkills.length ? `<button type="submit">Salvar skills</button>` : ""}
+        ${workspaceSkills.length ? `<button type="submit">保存 skills</button>` : ""}
       </form>
       <div class="section-title">Segredos</div>
       <p class="muted small">Variáveis de ambiente: ${a.envKeys} · MCP: ${a.hasMcp ? "configurado" : "nenhum"}. Por segurança, segredos não passam pelo painel — edite no app do Multica.</p>
       <div class="section-title">Copiar agente</div>
       <form class="cfg-copy grid2">
-        <label>Nome da cópia<input name="name" value="${esc(a.name)} (cópia)" maxlength="120" /></label>
+        <label>名称 da cópia<input name="name" value="${esc(a.name)} (cópia)" maxlength="120" /></label>
         <label>Em qual runtime<select name="runtimeId">${rtOpts(a.runtimeId)}</select></label>
         <button type="submit">📄 Criar cópia</button>
       </form>
       <div class="section-title danger-title">Zona de risco</div>
-      <button type="button" class="danger" data-act="archive">🗄️ Arquivar agente</button>
+      <button type="button" class="danger" data-act="archive">🗄️ 归档 agente</button>
       <p class="muted small">Criado em ${when(a.createdAt)} · atualizado em ${when(a.updatedAt)}</p>`;
 
     const form = tb.querySelector("form.cfg");
@@ -198,7 +198,7 @@ export function renderConfig(tb, { agent, api, flash, onChanged }) {
       try {
         await api(`/api/agents/${a.id}/update`, diff);
         Object.assign(a, diff, diff.permission ? { permissionMode: diff.permission === "private" ? "private" : "public_to" } : {});
-        flash("Agente atualizado.");
+        flash("智能体 atualizado.");
         onChanged();
       } catch (err) {
         flash(err.message, false);
@@ -227,11 +227,11 @@ export function renderConfig(tb, { agent, api, flash, onChanged }) {
       }
     });
     tb.querySelector('[data-act="archive"]').addEventListener("click", async () => {
-      const typed = prompt(`Arquivar desativa "${a.name}". Para confirmar, digite o nome do agente:`);
-      if (typed !== a.name) return typed !== null && flash("Nome não confere; nada foi arquivado.", false);
+      const typed = prompt(`归档 desativa "${a.name}". Para confirmar, digite o nome do agente:`);
+      if (typed !== a.name) return typed !== null && flash("名称 não confere; nada foi arquivado.", false);
       try {
         await api(`/api/agents/${a.id}/archive`, {});
-        flash("Agente arquivado.");
+        flash("智能体 arquivado.");
         onChanged({ archived: true });
       } catch (err) {
         flash(err.message, false);
@@ -264,7 +264,7 @@ export function renderLook(tb, { agent, api, flash, onChanged }) {
       <div class="dots">${SKINS.map((c) => `<button type="button" class="dotpick ${sel.skin === c ? "on" : ""}" data-skin="${c}" style="background:${hex(c)}" aria-label="pele"></button>`).join("")}<button type="button" class="dotpick auto ${sel.skin == null ? "on" : ""}" data-skin="" title="automático">A</button></div>
       <div class="section-title">Cabelo</div>
       <div class="dots">${HAIRS.map((c) => `<button type="button" class="dotpick ${sel.hair === c ? "on" : ""}" data-hair="${c}" style="background:${hex(c)}" aria-label="cabelo"></button>`).join("")}<button type="button" class="dotpick auto ${sel.hair == null ? "on" : ""}" data-hair="" title="automático">A</button></div>
-      <div class="row" style="margin-top:12px"><button type="button" data-reset>↺ Voltar ao padrão</button><button type="button" class="primary" data-save>💾 Salvar visual</button></div>
+      <div class="row" style="margin-top:12px"><button type="button" data-reset>↺ Voltar ao padrão</button><button type="button" class="primary" data-save>💾 保存 visual</button></div>
       <p class="muted small">O visual vale para todos que abrem o painel. Atualiza no escritório em segundos.</p>`;
   };
   tb.addEventListener("click", async (e) => {

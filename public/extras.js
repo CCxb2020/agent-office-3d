@@ -3,7 +3,7 @@
 
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const hm = (d = new Date()) => d.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+const hm = (d = new Date()) => d.toLocaleTimeString("zh-CN", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 
 // ---------- feed ao vivo ----------
 
@@ -11,7 +11,7 @@ export function createFeed(el, { onAgent, onSchedule, toast }) {
   let prev = null;
   const events = [];
   let unread = 0;
-  el.innerHTML = `<div class="feed-head"><b>📰 Ao vivo</b><span class="muted small">mudanças desde que você abriu</span><button type="button" class="feed-close" aria-label="Fechar">✕</button></div><ul class="feed-list"></ul>`;
+  el.innerHTML = `<div class="feed-head"><b>📰 实时</b><span class="muted small">打开页面后的状态变化</span><button type="button" class="feed-close" aria-label="关闭">✕</button></div><ul class="feed-list"></ul>`;
   const list = el.querySelector(".feed-list");
   el.querySelector(".feed-close").onclick = () => (el.hidden = true);
   list.addEventListener("click", (e) => {
@@ -30,7 +30,7 @@ export function createFeed(el, { onAgent, onSchedule, toast }) {
   function render() {
     list.innerHTML = events.length
       ? events.map((e) => `<li class="ev ${e.kind}" ${e.a ? `data-a="${e.a}"` : ""} ${e.s ? `data-s="${e.s}"` : ""}><span class="t">${hm(e.at)}</span>${esc(e.text)}</li>`).join("")
-      : `<li class="muted small">Nada mudou ainda. Os eventos aparecem aqui a cada atualização (20 s).</li>`;
+      : `<li class="muted small">暂无状态变化。新动态会显示在这里。</li>`;
   }
 
   return {
@@ -43,29 +43,29 @@ export function createFeed(el, { onAgent, onSchedule, toast }) {
         for (const a of data.agents) {
           const b = prev.agents.get(a.id);
           if (!b) {
-            push({ kind: "info", a: a.id, text: `➕ Novo agente: ${a.emoji} ${a.name}` });
+            push({ kind: "info", a: a.id, text: `➕ 新增智能体： ${a.emoji} ${a.name}` });
             continue;
           }
           const task = a.work?.[0]?.issue?.identifier ?? a.work?.[0]?.label ?? "";
           if (a.state !== b.state) {
             const txt = {
-              working: `▶️ ${a.emoji} ${a.name} começou${task ? ` ${task}` : ""} (💻 ${a.machine})`,
-              idle: b.state === "working" ? `✅ ${a.emoji} ${a.name} terminou e foi para a copa` : `☕ ${a.emoji} ${a.name} ficou ocioso`,
-              blocked: `⛔ ${a.emoji} ${a.name} bloqueou (${a.blocked[0]?.identifier ?? "pendência"})`,
-              offline: `💤 ${a.emoji} ${a.name} ficou offline (${a.machine})`,
+              working: `▶️ ${a.emoji} ${a.name} 开始工作${task ? ` ${task}` : ""} (💻 ${a.machine})`,
+              idle: b.state === "working" ? `✅ ${a.emoji} ${a.name} 已完成本轮工作，返回休息区` : `☕ ${a.emoji} ${a.name} 进入空闲状态`,
+              blocked: `⛔ ${a.emoji} ${a.name} 遇到阻塞 (${a.blocked[0]?.identifier ?? "待处理事项"})`,
+              offline: `💤 ${a.emoji} ${a.name} 已离线 (${a.machine})`,
             }[a.state];
             push({ kind: a.state === "blocked" ? "bad" : a.state === "working" ? "good" : "info", a: a.id, text: txt }, a.state === "working" || a.state === "blocked");
           } else if (a.state === "working") {
             const prevTask = b.work?.[0]?.issue?.identifier ?? b.work?.[0]?.label ?? "";
-            if (task && task !== prevTask) push({ kind: "good", a: a.id, text: `🔄 ${a.emoji} ${a.name} passou para ${task}` });
+            if (task && task !== prevTask) push({ kind: "good", a: a.id, text: `🔄 ${a.emoji} ${a.name} 切换到 ${task}` });
           }
         }
-        for (const id of prev.agents.keys()) if (!cur.agents.has(id)) push({ kind: "info", text: `🗄️ ${prev.agents.get(id).name} saiu do escritório` });
+        for (const id of prev.agents.keys()) if (!cur.agents.has(id)) push({ kind: "info", text: `🗄️ ${prev.agents.get(id).name} 已离开办公室` });
         for (const s of data.schedules) {
           const b = prev.sched.get(s.id);
           if (!b || !s.lastRun || s.lastRun.id === b.lastRun?.id) continue;
           const bad = s.lastRun.status === "failed";
-          push({ kind: bad ? "bad" : "good", s: s.id, text: `${bad ? "❌" : "⏰"} ${s.title}: ${bad ? "falhou" : "executou"}` }, bad);
+          push({ kind: bad ? "bad" : "good", s: s.id, text: `${bad ? "❌" : "⏰"} ${s.title}: ${bad ? "失败" : "已运行"}` }, bad);
         }
       }
       prev = cur;
@@ -92,7 +92,7 @@ export function createFeed(el, { onAgent, onSchedule, toast }) {
 export function createPalette({ getData, getBuildings, onAgent, onSchedule, onBuilding, actions }) {
   const dlg = document.createElement("dialog");
   dlg.className = "palette";
-  dlg.innerHTML = `<input type="search" placeholder="Buscar agente, tarefa agendada, prédio ou ação…" /><ul></ul><div class="muted small hint">↑↓ para escolher · Enter abre · Esc fecha</div>`;
+  dlg.innerHTML = `<input type="search" placeholder="搜索智能体、定时任务、办公楼或操作…" /><ul></ul><div class="muted small hint">↑↓ 选择 · 回车打开 · Esc 关闭</div>`;
   document.body.appendChild(dlg);
   const input = dlg.querySelector("input");
   const ul = dlg.querySelector("ul");
@@ -103,10 +103,10 @@ export function createPalette({ getData, getBuildings, onAgent, onSchedule, onBu
     const d = getData();
     if (!d) return [];
     return [
-      ...actions.map((a) => ({ type: "Ação", label: a.label, run: a.run })),
-      ...getBuildings().map((b) => ({ type: "Prédio", label: `🏢 ${b.name}`, run: () => onBuilding(b.key) })),
-      ...d.agents.map((a) => ({ type: "Agente", label: `${a.emoji} ${a.name}`, sub: `${a.machine} · ${a.provider}${a.work?.[0]?.issue ? ` · ${a.work[0].issue.identifier}` : ""}`, run: () => onAgent(a.id) })),
-      ...d.schedules.map((s) => ({ type: "Agendada", label: `⏰ ${s.title}`, sub: s.status === "active" ? "ativa" : "pausada", run: () => onSchedule(s.id) })),
+      ...actions.map((a) => ({ type: "操作", label: a.label, run: a.run })),
+      ...getBuildings().map((b) => ({ type: "办公楼", label: `🏢 ${b.name}`, run: () => onBuilding(b.key) })),
+      ...d.agents.map((a) => ({ type: "智能体", label: `${a.emoji} ${a.name}`, sub: `${a.machine} · ${a.provider}${a.work?.[0]?.issue ? ` · ${a.work[0].issue.identifier}` : ""}`, run: () => onAgent(a.id) })),
+      ...d.schedules.map((s) => ({ type: "定时任务", label: `⏰ ${s.title}`, sub: s.status === "active" ? "已启用" : "已暂停", run: () => onSchedule(s.id) })),
     ];
   }
 
@@ -116,7 +116,7 @@ export function createPalette({ getData, getBuildings, onAgent, onSchedule, onBu
     sel = Math.min(sel, Math.max(0, items.length - 1));
     ul.innerHTML = items.length
       ? items.map((it, i) => `<li class="${i === sel ? "sel" : ""}" data-i="${i}"><span class="type">${it.type}</span><span class="lbl">${esc(it.label)}${it.sub ? `<small>${esc(it.sub)}</small>` : ""}</span></li>`).join("")
-      : `<li class="muted">Nada encontrado.</li>`;
+      : `<li class="muted">没有找到匹配结果。</li>`;
     ul.querySelector(".sel")?.scrollIntoView({ block: "nearest" });
   }
 

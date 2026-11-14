@@ -8,13 +8,13 @@ import { api } from "./agent-panel.js";
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const TZ = { timeZone: "America/Sao_Paulo" };
-const hm = (d) => new Date(d).toLocaleTimeString("pt-BR", { ...TZ, hour: "2-digit", minute: "2-digit" });
-const dayKey = (d) => new Date(d).toLocaleDateString("pt-BR", { ...TZ, year: "numeric", month: "2-digit", day: "2-digit" });
+const hm = (d) => new Date(d).toLocaleTimeString("zh-CN", { ...TZ, hour: "2-digit", minute: "2-digit" });
+const dayKey = (d) => new Date(d).toLocaleDateString("zh-CN", { ...TZ, year: "numeric", month: "2-digit", day: "2-digit" });
 function dayLabel(d) {
   const k = dayKey(d);
-  if (k === dayKey(Date.now())) return "Hoje";
-  if (k === dayKey(Date.now() - 86400_000)) return "Ontem";
-  return new Date(d).toLocaleDateString("pt-BR", { ...TZ, weekday: "long", day: "2-digit", month: "long" });
+  if (k === dayKey(Date.now())) return "今天";
+  if (k === dayKey(Date.now() - 86400_000)) return "昨天";
+  return new Date(d).toLocaleDateString("zh-CN", { ...TZ, weekday: "long", day: "2-digit", month: "long" });
 }
 function dur(a, b) {
   if (!a || !b) return "";
@@ -22,24 +22,24 @@ function dur(a, b) {
   return s < 60 ? `${Math.round(s)} s` : s < 3600 ? `${Math.round(s / 60)} min` : `${(s / 3600).toFixed(1)} h`;
 }
 const RUN_ST = {
-  completed: ["✅", "ok", "Concluída"],
-  succeeded: ["✅", "ok", "Concluída"],
-  done: ["✅", "ok", "Concluída"],
-  failed: ["❌", "bad", "Falhou"],
-  error: ["❌", "bad", "Falhou"],
-  cancelled: ["⏹", "muted", "Cancelada"],
-  canceled: ["⏹", "muted", "Cancelada"],
-  running: ["⏳", "live", "Rodando"],
-  dispatched: ["⏳", "live", "Iniciando"],
-  queued: ["🕓", "muted", "Na fila"],
-  pending: ["🕓", "muted", "Na fila"],
-  skipped: ["⏭", "muted", "Pulada"],
+  completed: ["✅", "ok", "已完成"],
+  succeeded: ["✅", "ok", "已完成"],
+  done: ["✅", "ok", "已完成"],
+  failed: ["❌", "bad", "失败"],
+  error: ["❌", "bad", "失败"],
+  cancelled: ["⏹", "muted", "已取消"],
+  canceled: ["⏹", "muted", "已取消"],
+  running: ["⏳", "live", "运行中"],
+  dispatched: ["⏳", "live", "正在启动"],
+  queued: ["🕓", "muted", "排队中"],
+  pending: ["🕓", "muted", "排队中"],
+  skipped: ["⏭", "muted", "已跳过"],
 };
 const ISSUE_ST = {
-  backlog: ["Backlog", "muted"], todo: ["A fazer", "muted"], in_progress: ["Em andamento", "live"], in_review: ["Em revisão", "warn"],
-  blocked: ["Bloqueada", "bad"], done: ["Concluída", "ok"], cancelled: ["Cancelada", "muted"],
+  backlog: ["待安排", "muted"], todo: ["待办", "muted"], in_progress: ["进行中", "live"], in_review: ["待审核", "warn"],
+  blocked: ["受阻", "bad"], done: ["已完成", "ok"], cancelled: ["已取消", "muted"],
 };
-const KIND = { direct: "Tarefa", chat: "Chat", autopilot: "Agendada", mention: "Menção", comment: "Comentário" };
+const KIND = { direct: "任务", chat: "Chat", autopilot: "定时任务", mention: "提及", comment: "评论" };
 
 export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule, onIssue, onRun, toast }) {
   let tab = "runs";
@@ -47,8 +47,8 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
   let q = "";
   const selected = new Set(); // issues marcadas para ação em lote
   let found = null; // resultado da busca no servidor (títulos, descrições e comentários)
-  const source = (t) => (t === "chats" ? "runs" : t); // a aba Chats usa as execuções
-  let issuePages = 3; // páginas de 100 issues (as mais recentes primeiro)
+  const source = (t) => (t === "chats" ? "runs" : t); // a aba Chats usa as 次运行
+  let issuePages = 3; // páginas de 100 issues (as 条最近记录 primeiro)
   const loaded = {}; // tab → { at, items }
   let loading = false;
 
@@ -60,7 +60,7 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
 
   async function load(fresh = false) {
     if (!getAuth().auth) {
-      el.innerHTML = `<div class="h-empty"><p>O histórico mostra execuções e issues do Multica — entre para ver.</p><button type="button" class="primary" data-h="login">🔐 Entrar</button></div>`;
+      el.innerHTML = `<div class="h-empty"><p>登录后可查看 Multica 运行记录和任务。</p><button type="button" class="primary" data-h="login">🔐 登录</button></div>`;
       return;
     }
     const key = source(tab);
@@ -83,28 +83,28 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
 
   function head(items) {
     const tabs = [
-      ["runs", "⏱️ Execuções"],
+      ["runs", "⏱️ 运行记录"],
       ["chats", "💬 Chats"],
-      ["schedules", "⏰ Agendadas"],
+      ["schedules", "⏰ 定时任务"],
       ["issues", "📋 Issues"],
     ];
     const chips =
       tab === "issues"
-        ? [["all", "Todas"], ["done", "Concluídas"], ["in_progress", "Em andamento"], ["in_review", "Em revisão"], ["todo", "A fazer"], ["blocked", "Bloqueadas"], ["cancelled", "Canceladas"]]
-        : [["all", "Todas"], ["ok", "Concluídas"], ["bad", "Falhas"], ["live", "Rodando"]];
+        ? [["all", "全部"], ["done", "已完成"], ["in_progress", "进行中"], ["in_review", "待审核"], ["todo", "待办"], ["blocked", "受阻"], ["cancelled", "已取消"]]
+        : [["all", "全部"], ["ok", "已完成"], ["bad", "失败"], ["live", "运行中"]];
     return `
       <div class="h-top">
         <div class="h-tabs">${tabs.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div>
-        <input class="h-search" placeholder="${tab === "issues" ? "🔎 Filtrar… (Enter busca também em descrições e comentários)" : "🔎 Filtrar por agente, issue ou título…"}" value="${esc(q)}" />
-        <button type="button" data-h="reload" title="Ler de novo do Multica">↻ Atualizar</button>
+        <input class="h-search" placeholder="${tab === "issues" ? "🔎 筛选…（回车可搜索描述和评论）" : "🔎 按智能体、任务或标题筛选…"}" value="${esc(q)}" />
+        <button type="button" data-h="reload" title="Ler de novo do Multica">↻ 刷新</button>
       </div>
       ${summary(items)}
       <div class="h-chips">${chips.map(([k, l]) => `<button type="button" data-f="${k}" aria-pressed="${filter === k}">${l}</button>`).join("")}
         ${loaded[source(tab)]?.at ? `<small class="muted">lido às ${hm(loaded[source(tab)].at)} · clique numa linha para gerenciar</small>` : ""}</div>
       ${tab === "issues" && selected.size ? `<div class="h-bulk"><b>${selected.size} selecionada${selected.size > 1 ? "s" : ""}</b>
         <select class="h-bulk-status">${Object.entries(ISSUE_ST).map(([k, [l]]) => `<option value="${k}" ${k === "done" ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
-        <button type="button" class="primary" data-h="bulk">Aplicar status</button><button type="button" data-h="unselect">Limpar seleção</button></div>` : ""}
-      ${found ? `<div class="h-found">🔎 ${found.loading ? "Buscando" : `${found.items.length} resultado${found.items.length === 1 ? "" : "s"}`} para “${esc(found.q)}” em títulos, descrições e comentários <button type="button" data-h="unfind">✕ limpar</button></div>` : ""}`;
+        <button type="button" class="primary" data-h="bulk">应用状态</button><button type="button" data-h="unselect">清空选择</button></div>` : ""}
+      ${found ? `<div class="h-found">🔎 ${found.loading ? "搜索中" : `${found.items.length} resultado${found.items.length === 1 ? "" : "s"}`} para “${esc(found.q)}” em títulos, descrições e comentários <button type="button" data-h="unfind">✕ limpar</button></div>` : ""}`;
   }
 
   /** Cartões de resumo (últimas 24 h) e alerta de falta de créditos. */
@@ -116,7 +116,7 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
       const open = items.filter((i) => ["todo", "in_progress", "in_review", "backlog"].includes(i.status)).length;
       const blocked = items.filter((i) => i.status === "blocked").length;
       const created = items.filter((i) => new Date(i.createdAt) > since).length;
-      return `<div class="h-cards">${card("✅", done, "concluídas em 24 h")}${card("🆕", created, "criadas em 24 h")}${card("🔄", open, "abertas")}${card("⛔", blocked, "bloqueadas", blocked ? "bad" : "")}</div>`;
+      return `<div class="h-cards">${card("✅", done, "过去 24 小时已完成")}${card("🆕", created, "过去 24 小时新建")}${card("🔄", open, "待处理")}${card("⛔", blocked, "受阻", blocked ? "bad" : "")}</div>`;
     }
     const at = (r) => r.createdAt ?? r.at;
     const day = items.filter((r) => new Date(at(r)) > since);
@@ -125,8 +125,8 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
     const live = items.filter((r) => RUN_ST[r.status]?.[1] === "live").length;
     const rate = ok + bad ? Math.round((ok / (ok + bad)) * 100) : null;
     const credits = items.slice(0, 40).some((r) => /out of credits|sem cr[eé]dito/i.test(r.failure ?? r.error ?? ""));
-    return `${credits ? `<div class="h-alert">⚠️ Execuções recentes falharam com <b>“workspace is out of credits”</b>: o workspace do Multica está sem créditos. Peça ao dono do workspace para recarregar — até lá, tarefas e agendadas não rodam.</div>` : ""}
-      <div class="h-cards">${card("▶️", day.length, "execuções em 24 h")}${card("✅", ok, "concluídas")}${card("❌", bad, "falharam", bad ? "bad" : "")}${card("📈", rate == null ? "—" : `${rate}%`, "taxa de sucesso")}${card("⏳", live, "rodando agora")}</div>`;
+    return `${credits ? `<div class="h-alert">⚠️ 运行记录 recentes 失败 com <b>“workspace is out of credits”</b>: o workspace do Multica está sem créditos. Peça ao dono do workspace para recarregar — até lá, tarefas e agendadas não rodam.</div>` : ""}
+      <div class="h-cards">${card("▶️", day.length, "execuções em 24 h")}${card("✅", ok, "已完成")}${card("❌", bad, "失败", bad ? "bad" : "")}${card("📈", rate == null ? "—" : `${rate}%`, "成功率")}${card("⏳", live, "rodando agora")}</div>`;
   }
   const card = (icon, n, label, cls = "") => `<div class="h-card ${cls}"><span>${icon}</span><b>${n}</b><small>${label}</small></div>`;
 
@@ -166,7 +166,7 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
             <span class="h-time">${hm(r.at)}</span>
             <span class="h-st ${cls}">${ic} ${esc(label)}</span>
             <span class="h-what"><button type="button" class="h-link" data-sched="${esc(r.scheduleId)}">⏰ ${esc(r.title)}</button>
-              <small>${r.source === "manual" ? "disparo manual" : r.source === "schedule" ? "pelo horário" : esc(r.source ?? "")}${r.completedAt ? ` · ${dur(r.at, r.completedAt)}` : ""}</small>
+              <small>${r.source === "manual" ? "手动启动" : r.source === "schedule" ? "定时启动" : esc(r.source ?? "")}${r.completedAt ? ` · ${dur(r.at, r.completedAt)}` : ""}</small>
               ${r.failure ? `<small class="h-err">${esc(r.failure)}</small>` : ""}</span>
             ${who(r.agentId)}
           </div>`,
@@ -196,8 +196,8 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
     const st = tab === "issues" && found ? { at: Date.now(), items: found.items } : loaded[source(tab)];
     const items = (st?.items ?? []).filter((r) => tab !== "chats" || r.kind === "chat");
     let body;
-    if (loading && !st) body = `<p class="muted">⏳ Lendo do Multica… (a primeira leitura das execuções pode levar ~20 s)</p>`;
-    else if (st?.error) body = `<p class="error">Não deu para ler: ${esc(st.error)}</p>`;
+    if (loading && !st) body = `<p class="muted">⏳ 正在读取 Multica 数据，首次读取可能需要约 20 秒。</p>`;
+    else if (st?.error) body = `<p class="error">读取失败: ${esc(st.error)}</p>`;
     else {
       const rows = tab === "runs" || tab === "chats" ? rowsRuns(items) : tab === "schedules" ? rowsSchedules(items) : rowsIssues(items);
       if (!rows.length) body = `<p class="muted">Nada encontrado com esse filtro.</p>`;
@@ -241,7 +241,7 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
     if (b.dataset.h === "more") {
       issuePages = Math.min(20, issuePages + 2);
       b.disabled = true;
-      b.textContent = "⏳ Carregando…";
+      b.textContent = "⏳ 正在加载…";
       return load(true);
     }
     if (b.dataset.h === "unfind") return (found = null), render();
@@ -251,11 +251,11 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
       b.disabled = true;
       try {
         const r = await api("/api/manage/bulk-status", { ids: [...selected], status });
-        toast(`${r.ok.length} atualizada(s)${r.failed.length ? `, ${r.failed.length} falharam` : ""}.`, !r.failed.length);
+        toast(`${r.ok.length} atualizada(s)${r.failed.length ? `, ${r.failed.length} 失败` : ""}.`, !r.failed.length);
         selected.clear();
         found = null;
       } catch (err) {
-        toast(`Não deu: ${err.message}`, false);
+        toast(`操作失败： ${err.message}`, false);
       }
       return load(true);
     }
@@ -296,7 +296,7 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
       found = { q: text, items: (await api(`/api/manage/search?q=${encodeURIComponent(text)}`)).issues };
     } catch (err) {
       found = null;
-      toast(`Busca falhou: ${err.message}`, false);
+      toast(`Busca 失败: ${err.message}`, false);
     }
     render();
   });
