@@ -12,7 +12,7 @@ export const workIcon = (w) => (w.queued ? "🕓" : ICON[w.kind] ?? (w.kind === 
  */
 export function workTitle(w) {
   if (w.issue) return `${w.issue.identifier} · ${w.issue.title}`;
-  return w.about || w.label || (w.kind === "chat" ? "Chat" : (w.kind ?? "execução"));
+  return w.about || w.label || (w.kind === "chat" ? "Chat" : (w.kind ?? "运行"));
 }
 
 /** Dica completa (tooltip): projeto, pedido, quem pediu e o que está fazendo agora. */
@@ -20,9 +20,9 @@ export function workHint(w) {
   return [
     w.issue?.project ? `项目： ${w.issue.project}` : "",
     w.issue ? `${w.issue.identifier} · ${w.issue.title}` : "",
-    w.about ? `发起人： ${w.about}` : "",
-    w.by ? `执行人： ${w.by}` : "",
-    w.now ? `现在: ${w.now}` : "",
+    w.about ? `任务说明：${w.about}` : "",
+    w.by ? `发起人：${w.by}` : "",
+    w.now ? `当前操作：${w.now}` : "",
     "点击查看详情",
   ].filter(Boolean).join(" · ");
 }

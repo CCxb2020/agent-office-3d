@@ -69,15 +69,15 @@ export function createManage({ multica, redact }) {
   }
 
   async function assign(ref, body) {
-    if (!body || !("agentId" in body)) throw bad("Informe o agente (ou null para tirar o responsável).");
+    if (!body || !("agentId" in body)) throw bad("请选择智能体，或选择未分配。");
     const { agentId } = body;
     if (agentId === null) return multica(["issue", "assign", ref, "--unassign"]);
-    if (!ID.test(agentId ?? "")) throw bad("Agente inválido.");
+    if (!ID.test(agentId ?? "")) throw bad("无效的智能体。");
     return multica(["issue", "assign", ref, "--to-id", agentId]);
   }
 
   async function priority(ref, p) {
-    if (!PRIORITIES.has(p)) throw bad("Prioridade inválida.");
+    if (!PRIORITIES.has(p)) throw bad("无效的优先级。");
     return multica(["issue", "update", ref, "--priority", p]);
   }
 
@@ -85,24 +85,24 @@ export function createManage({ multica, redact }) {
     const args = ["issue", "update", ref];
     if (title !== undefined) {
       const t = String(title).trim();
-      if (!t || t.length > 200) throw bad("Título vazio ou longo demais.");
+      if (!t || t.length > 200) throw bad("标题为空或过长。");
       args.push("--title", t);
     }
     if (dueDate !== undefined) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate ?? "")) throw bad("Prazo inválido (AAAA-MM-DD).");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate ?? "")) throw bad("截止日期无效，请使用 YYYY-MM-DD。");
       args.push("--due-date", dueDate);
     }
-    if (args.length === 3) throw bad("Nada para alterar.");
+    if (args.length === 3) throw bad("没有可更新的字段。");
     return multica(args);
   }
 
   /** Mesmo status para várias issues; devolve quais deram certo e quais falharam. */
   async function bulkStatus(ids, status) {
-    if (!STATUSES.has(status)) throw bad("Status inválido.");
-    if (!Array.isArray(ids)) throw bad("Nenhuma issue selecionada.");
+    if (!STATUSES.has(status)) throw bad("无效的状态。");
+    if (!Array.isArray(ids)) throw bad("请选择至少一项任务。");
     const refs = [...new Set(ids)].filter((x) => ID.test(x) || KEY.test(x));
-    if (!refs.length) throw bad("Nenhuma issue selecionada.");
-    if (refs.length > MAX_BULK) throw bad(`No máximo ${MAX_BULK} issues por vez.`);
+    if (!refs.length) throw bad("请选择至少一项任务。");
+    if (refs.length > MAX_BULK) throw bad(`每次最多处理 ${MAX_BULK} 项任务。`);
     const ok = [], failed = [];
     for (let i = 0; i < refs.length; i += 5) {
       await Promise.all(
@@ -117,8 +117,8 @@ export function createManage({ multica, redact }) {
   /** Busca em títulos, descrições e comentários. */
   async function search(q) {
     const query = String(q ?? "").trim().slice(0, 200);
-    if (query.length < 2) throw bad("Digite pelo menos 2 letras.");
-    if (query.startsWith("-")) throw bad("A busca não pode começar com “-”.");
+    if (query.length < 2) throw bad("请输入至少 2 个字符。");
+    if (query.startsWith("-")) throw bad("搜索词不能以「-」开头。");
     const res = await multica(["issue", "search", query, "--limit", "50", "--include-closed"]);
     return list(res, "issues").map((i) => ({
       id: i.id,
@@ -138,16 +138,16 @@ export function createManage({ multica, redact }) {
     const POST = req.method === "POST";
     let m;
     if ((m = /^\/api\/manage\/issues\/([^/]+)$/.exec(path)) && !POST) {
-      if (!ID.test(m[1]) && !KEY.test(m[1])) throw bad("Issue inválida.");
+      if (!ID.test(m[1]) && !KEY.test(m[1])) throw bad("无效的任务。");
       return send(res, 200, await detail(m[1])), true;
     }
     if ((m = /^\/api\/manage\/issues\/([^/]+)\/edit$/.exec(path)) && POST) {
-      if (!ID.test(m[1]) && !KEY.test(m[1])) throw bad("Issue inválida.");
+      if (!ID.test(m[1]) && !KEY.test(m[1])) throw bad("无效的任务。");
       await edit(m[1], await readJson(req));
       return send(res, 200, { ok: true }), true;
     }
     if ((m = /^\/api\/manage\/issues\/([^/]+)\/(assign|priority)$/.exec(path)) && POST) {
-      if (!ID.test(m[1]) && !KEY.test(m[1])) throw bad("Issue inválida.");
+      if (!ID.test(m[1]) && !KEY.test(m[1])) throw bad("无效的任务。");
       const body = await readJson(req);
       if (m[2] === "assign") await assign(m[1], body);
       else await priority(m[1], body.priority);

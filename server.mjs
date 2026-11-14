@@ -195,7 +195,7 @@ async function currentWork(agentId) {
         }
       }
       const who = r.attribution?.initiator?.name;
-      return { ...base, label: r.kind === "chat" ? `Chat${who ? ` com ${who}` : ""}` : r.kind };
+      return { ...base, label: r.kind === "chat" ? `对话${who ? ` · ${who}` : ""}` : r.kind };
     }),
   );
 }
@@ -406,7 +406,7 @@ const clients = new Set();
 function officeBody() {
   return snapshot
     ? { ...snapshot, meetings: meetings.active(), agents: snapshot.agents.map((ag) => ({ ...ag, look: looks.get(ag.id), today: today.of(ag.id) })) }
-    : { error: lastError ?? "carregando" };
+    : { error: lastError ?? "正在加载" };
 }
 let lastSent = "";
 function broadcast() {
@@ -573,7 +573,7 @@ createServer(async (req, res) => {
     }
     if (url.pathname.startsWith("/api/")) {
       res.writeHead(401, { "content-type": "application/json", "cache-control": "no-store" });
-      return res.end(JSON.stringify({ error: "Faça login." }));
+      return res.end(JSON.stringify({ error: "请先登录。" }));
     }
     if (/\.(js|css|png|jpg|svg|json|map|glb)$/.test(url.pathname)) return res.writeHead(401).end();
     res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });

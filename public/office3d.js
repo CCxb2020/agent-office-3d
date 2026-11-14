@@ -108,7 +108,7 @@ function shelf(items, maxW, gap) {
 
 const CONF_MAX = 6; // salas de reunião simultâneas por prédio
 const CONF_CAP = 10; // lugares na sala de reunião (4 de cada lado + 2 cabeceiras)
-const DORM_MAX = 12; // camas no dormitório das tarefas agendadas
+const DORM_MAX = 12; // camas no dormitório das 定时任务
 const BED_DX = 2.6;
 const BED_DZ = 3.6;
 
@@ -218,7 +218,7 @@ function drawScreen(d, agent) {
   x.font = "bold 26px ui-monospace, monospace";
   const w = agent.work?.[0];
   const n = activeWork(agent).length;
-  x.fillText(`${w?.issue?.identifier ?? (w?.label?.startsWith("Chat") ? "💬 chat" : "▶ run")}${n > 1 ? `  ×${n}` : ""}`, 12, 34);
+  x.fillText(`${w?.issue?.identifier ?? (w?.label?.startsWith("对话") ? "💬 对话" : "▶ 运行")}${n > 1 ? `  ×${n}` : ""}`, 12, 34);
   const colors = ["#7fb3ff", "#c3e88d", "#ffcb6b", "#f78c6c", "#89ddff"];
   let seed = hueOf(agent.id) * 1000;
   for (let i = 0; i < 8; i++) {
@@ -540,12 +540,12 @@ function workBubble(a) {
   const one = active[0];
   const multi = sum.n > 1 || sum.queued;
   const list = multi
-    ? `<span class="wl">${active.slice(0, 3).map((w) => `<i ${workAttrs(w, a.id, esc)}>${workIcon(w)} ${esc(workTitle(w))}</i>`).join("")}${active.length > 3 ? `<i>+${active.length - 3} mais</i>` : ""}</span>`
+    ? `<span class="wl">${active.slice(0, 3).map((w) => `<i ${workAttrs(w, a.id, esc)}>${workIcon(w)} ${esc(workTitle(w))}</i>`).join("")}${active.length > 3 ? `<i>+${active.length - 3} 项</i>` : ""}</span>`
     : one
       ? `<span class="wl one"><i ${workAttrs(one, a.id, esc)}>${one.issue ? `${esc(one.issue.project ? `${one.issue.project} · ` : "")}${esc(one.issue.title)}` : esc(workTitle(one))}</i>${one.now ? `<i class="now">✍️ ${esc(one.now)}</i>` : ""}</span>`
       : "";
   return `<div class="bubble ${multi ? "multi" : ""}"><b><i class="be">${esc(a.emoji)}</i>${esc(a.name)}${sum.n > 1 ? `<span class="mult" title="${sum.n} 个任务同时运行">×${sum.n}</span>` : ""}</b>` +
-    `<span class="pc">💻 ${esc(a.machine)}${multi ? ` · ${esc(sum.text)}` : one?.issue ? ` · ${esc(one.issue.identifier)}` : one?.kind === "chat" ? " · 💬 chat" : ""}${a.today?.runs ? ` · ⚡${a.today.runs} 今天` : ""}</span>${list}</div>`;
+    `<span class="pc">💻 ${esc(a.machine)}${multi ? ` · ${esc(sum.text)}` : one?.issue ? ` · ${esc(one.issue.identifier)}` : one?.kind === "chat" ? " · 💬 对话" : ""}${a.today?.runs ? ` · ⚡${a.today.runs} 今天` : ""}</span>${list}</div>`;
 }
 
 /** "⚡3 hoje · 👀1" para o rótulo de quem já trabalhou hoje. */
@@ -610,7 +610,7 @@ function walkPose(av, t, seed) {
 // ---------------- Cena ----------------
 
 const UNIFIED = "合并办公室";
-const ANNEX_GAP = 26; // distância entre a torre e a Central de Agendamentos
+const ANNEX_GAP = 26; // distância entre a torre e a 定时任务中心
 const POD = 4.6; // espaço de cada quiosque de 定时任务
 
 export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedule = () => {}, onSpot = () => {}, onBoard = () => {}, onConf = () => {} }) {
@@ -683,7 +683,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
   let bounds = { x0: -40, x1: 40, z0: -30, z1: 30 };
   let focusKey = null; // prédio em foco na vista "办公室" do bairro
   let boards = [];
-  let confBoards = []; // telões das salas de reunião // painéis de tarefas agendadas (recepção e área de trabalho)
+  let confBoards = []; // telões das salas de reunião // painéis de 定时任务 (recepção e área de trabalho)
   let schedules = [];
   let dormBeds = []; // camas do dormitório: { bed, blanket, head, clock, el, idx }
   let lastDorm = 0;
@@ -697,7 +697,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
   let filterIds = null; // Set de ids visíveis (filtros da barra lateral) ou null = todos
   let unified = false; // true = todos os visíveis num open-space só
   let vis = null; // { agents, machines } que a planta usa
-  let annex = null; // Central de Agendamentos: { group, x0, w, d, pods }
+  let annex = null; // 定时任务中心: { group, x0, w, d, pods }
   let annexKey = "";
   let reframe = false; // o filtro mudou a planta: reenquadra a câmera
   let layout = null;
@@ -792,7 +792,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     const trim = mat(0x0b3d5c);
     // Letreiro com brilho próprio (emissiveMap = a arte), legível de dia e de noite.
     const brandSign = (w, h) => {
-      const tex = signTexture(name ? [name.length > 18 ? `${name.slice(0, 17)}…` : name, `${count} agente${count === 1 ? "" : "s"} · Agent Office`] : ["Agent Office", "智能体办公室"]);
+      const tex = signTexture(name ? [name.length > 18 ? `${name.slice(0, 17)}…` : name, `${count} 位智能体 · Agent Office`] : ["Agent Office", "智能体办公室"]);
       return new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.4), [
         trim, trim, trim, trim,
         new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.55 }),
@@ -1083,7 +1083,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     mg.add(at(box(tableLen, 0.1, 2, mat(0x4e342e)), M.w / 2, 1.0, M.d / 2));
     mg.add(at(box(tableLen * 0.8, 0.95, 0.3, mat(0x3e2723)), M.w / 2, 0.5, M.d / 2));
     mg.add(at(box(3.5, 2, 0.1, mat(0xffffff, { emissive: 0x330000, emissiveIntensity: 0.4 })), M.w / 2, 2.2, 0.2)); // quadro
-    mg.add(label(`🚧 等待区 · bloqueados (<span data-zone="blocked">0</span>)`, "zone-label blocked", M.w / 2, 0.3, M.d + 0.3));
+    mg.add(label(`🚧 等待区 · 受阻 (<span data-zone="blocked">0</span>)`, "zone-label blocked", M.w / 2, 0.3, M.d + 0.3));
     M.spots = [];
     for (let i = 0; i < M.cap; i++) {
       const side = i % 2 ? 1 : -1;
@@ -1117,7 +1117,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
       for (const [w, d, x, z] of [[Dm.w, 0.08, Dm.w / 2, 0], [0.08, Dm.d, 0, Dm.d / 2], [0.08, Dm.d, Dm.w, Dm.d / 2]]) dg.add(at(box(w, 2.4, d, gm, { cast: false }), x, 1.3, z));
       // luz noturna (abajur azul) e tapete
       dg.add(at(kit("rugRectangle", Dm.w - 1.5) ?? new THREE.Group(), Dm.w / 2, 0.14, Dm.d / 2));
-      const dl = label(`😴 休息室 · tarefas agendadas (${Dm.n})`, "zone-label dorm", Dm.w / 2, 0.3, Dm.d + 0.3);
+      const dl = label(`😴 休息室 · 定时任务 (${Dm.n})`, "zone-label dorm", Dm.w / 2, 0.3, Dm.d + 0.3);
       dl.element.title = "查看休息室";
       dl.element.addEventListener("click", () => focusDorm());
       dg.add(dl);
@@ -1170,7 +1170,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
 
     // Nome do prédio sobre a fachada, visível de dentro também.
     if (name) {
-      const bl = label(`🏢 ${esc(name)} · ${count} agente${count === 1 ? "" : "s"}`, "zone-label building", p.W / 2, WALL_H + 1.5, p.D + 0.6);
+      const bl = label(`🏢 ${esc(name)} · ${count} 位智能体`, "zone-label building", p.W / 2, WALL_H + 1.5, p.D + 0.6);
       bl.element.title = "进入这栋楼";
       bl.element.addEventListener("click", () => {
         const key = site && sites.find((s) => s.name === name)?.key;
@@ -1313,12 +1313,12 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
     const roof = new THREE.Group();
     roof.userData.annex = true;
     roof.add(at(box(w + 1.2, 0.5, d + 1.2, mat(0x9aa3ad)), w / 2, floorY + WALL_H + 0.25, d / 2));
-    const signTex = signTexture(["⏰ Central", "定时任务"]);
+    const signTex = signTexture(["⏰ 控制台", "定时任务"]);
     roof.add(at(new THREE.Mesh(new THREE.BoxGeometry(Math.min(w - 2, 18), 4, 0.4), [trim, trim, trim, trim,
       new THREE.MeshStandardMaterial({ map: signTex, emissiveMap: signTex, emissive: 0xffffff, emissiveIntensity: 0.55 }), trim]), w / 2, floorY + WALL_H + 2.8, d - 0.4));
     g.add(roof);
     walls.roof.push(roof);
-    g.add(label(`⏰ Central de Agendamentos · ${list.length} tarefas`, "zone-label annex", w / 2, floorY + 0.3, d + 0.4));
+    g.add(label(`⏰ 定时任务中心 · ${list.length} 项任务`, "zone-label annex", w / 2, floorY + 0.3, d + 0.4));
 
     // Quiosques: tela com a tarefa, holograma do agente e anel de status.
     const pods = list.map((s, i) => {
@@ -1649,7 +1649,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
         `<div class="em">${a.state === "blocked" ? "⛔" : offline ? "💤" : esc(a.emoji)}</div>` +
         (a.state === "working"
           ? ""
-          : `<div class="nm">${esc(a.emoji)} ${esc(a.name)}${a.state === "blocked" ? ` · ${a.blocked.length} bloqueada(s)` : ""}${todayBadge(a)}</div>`);
+          : `<div class="nm">${esc(a.emoji)} ${esc(a.name)}${a.state === "blocked" ? ` · ${a.blocked.length} 项受阻` : ""}${todayBadge(a)}</div>`);
       if (av.tagEl.dataset.html !== html) {
         av.tagEl.innerHTML = html;
         av.tagEl.dataset.html = html;
@@ -1742,7 +1742,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
       b.head.material.color.setHex(ag?.look?.skin ?? SKIN[Math.floor(h * 997) % SKIN.length]);
       const when = new Date(s.nextRunAt);
       const mins = Math.round((when - now) / 60000);
-      const rel = mins <= 0 ? "agora" : mins < 60 ? `em ${mins} min` : mins < 1440 ? `em ${Math.floor(mins / 60)} h ${mins % 60 ? `${mins % 60} min` : ""}` : `em ${Math.round(mins / 1440)} d`;
+      const rel = mins <= 0 ? "现在" : mins < 60 ? `${mins} 分钟后` : mins < 1440 ? `${Math.floor(mins / 60)} 小时${mins % 60 ? `${mins % 60} 分钟` : ""}后` : `${Math.round(mins / 1440)} 天后`;
       const hm = when.toLocaleString("zh-CN", { timeZone: "America/Sao_Paulo", ...(mins < 1440 ? {} : { day: "2-digit", month: "2-digit" }), hour: "2-digit", minute: "2-digit" });
       const soon = mins <= 15;
       b.soon = soon;
@@ -1947,7 +1947,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
   const firstName = (n) => String(n ?? "").split(/[\s—–-]+/)[0];
   const hello = () => {
     const h = Number(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo", hour: "numeric", hour12: false }));
-    return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+    return h < 12 ? "早上好" : h < 18 ? "下午好" : "晚上好";
   };
   /** Balão + aceno por ~3 s; turnTo = para onde virar a cabeça (sentado). */
   function say(who, text, turnTo, t) {
@@ -1973,7 +1973,7 @@ export function createOffice(host, { onWork = () => {}, onSelect, onSelectSchedu
       .slice(0, 3);
     if (!seated.length) return;
     const hi = hello();
-    say(av, seated.length > 1 ? `👋 ${hi}, pessoal!` : `👋 ${hi}, ${firstName(seated[0].agent?.name)}!`, null, t);
+    say(av, seated.length > 1 ? `👋 ${hi}，各位！` : `👋 ${hi}, ${firstName(seated[0].agent?.name)}!`, null, t);
     seated.forEach((n, i) => say(n, i ? "👋" : `👋 ${hi}, ${firstName(av.agent?.name)}!`, av.pos, t));
   }
 

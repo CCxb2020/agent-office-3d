@@ -22,6 +22,6 @@ test("demonstração: ids passam na validação do painel (hexadecimais)", async
 test("demonstração: qualquer escrita é recusada", async () => {
   const cli = createDemoCli();
   for (const args of [["issue", "status", "x", "done"], ["issue", "create", "--title", "x"], ["agent", "update", "x"], ["autopilot", "trigger", "x"]]) {
-    await assert.rejects(cli(args), /Modo demonstração/);
+    await assert.rejects(cli(args), /演示模式下不能修改数据/);
   }
 });

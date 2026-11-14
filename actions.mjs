@@ -71,7 +71,7 @@ export function createActions({ multica, redact, onChange, onStart = () => {}, o
     const chunks = [];
     for await (const c of req) {
       size += c.length;
-      if (size > 256 * 1024) throw Object.assign(new Error("corpo grande demais"), { status: 413 });
+      if (size > 256 * 1024) throw Object.assign(new Error("corpo 超过长度限制"), { status: 413 });
       chunks.push(c);
     }
     return chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
@@ -175,16 +175,16 @@ export function createActions({ multica, redact, onChange, onStart = () => {}, o
       if (path === "/api/me") return send(res, 200, demo ? { enabled: true, auth: true, demo: true } : { enabled: Boolean(passwordHash), auth: sessionOk(req) }), true;
 
       if (path === "/api/login" && req.method === "POST") {
-        if (!passwordHash) return send(res, 403, { error: "Login não configurado no servidor." }), true;
+        if (!passwordHash) return send(res, 403, { error: "服务端尚未配置登录。" }), true;
         const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket.remoteAddress;
         const f = failures.get(ip);
-        if (f?.until > Date.now()) return send(res, 429, { error: "Muitas tentativas. Tente de novo em alguns minutos." }), true;
+        if (f?.until > Date.now()) return send(res, 429, { error: "尝试次数过多，请几分钟后重试。" }), true;
         const { password } = await readJson(req);
         if (!checkPassword(password, passwordHash)) {
           const count = (f?.count ?? 0) + 1;
           failures.set(ip, { count, until: count >= 5 ? Date.now() + 15 * 60_000 : 0 });
           await new Promise((r) => setTimeout(r, 600));
-          return send(res, 401, { error: "Senha incorreta." }), true;
+          return send(res, 401, { error: "密码错误。" }), true;
         }
         failures.delete(ip);
         const exp = String(Date.now() + SESSION_HOURS * 3600_000);
@@ -195,38 +195,38 @@ export function createActions({ multica, redact, onChange, onStart = () => {}, o
         return send(res, 200, { auth: false }, { "set-cookie": cookie(req, "", 0) }), true;
       }
 
-      if (!demo && (!passwordHash || !sessionOk(req))) return send(res, 401, { error: "Faça login." }), true;
-      if (req.method !== "GET" && req.headers["x-painel"] !== "1") return send(res, 403, { error: "Requisição recusada." }), true;
+      if (!demo && (!passwordHash || !sessionOk(req))) return send(res, 401, { error: "请先登录。" }), true;
+      if (req.method !== "GET" && req.headers["x-painel"] !== "1") return send(res, 403, { error: "请求被拒绝。" }), true;
 
       let m;
       if ((m = /^\/api\/agents\/([^/]+)\/activity$/.exec(path)) && req.method === "GET") {
-        if (!ID.test(m[1])) return send(res, 400, { error: "id inválido" }), true;
+        if (!ID.test(m[1])) return send(res, 400, { error: "无效的 ID" }), true;
         return send(res, 200, await activity(m[1])), true;
       }
       if ((m = /^\/api\/runs\/([^/]+)\/messages$/.exec(path)) && req.method === "GET") {
-        if (!ID.test(m[1])) return send(res, 400, { error: "id inválido" }), true;
+        if (!ID.test(m[1])) return send(res, 400, { error: "无效的 ID" }), true;
         return send(res, 200, { messages: await messages(m[1]) }), true;
       }
       if ((m = /^\/api\/schedules\/([^/]+)$/.exec(path)) && req.method === "GET") {
-        if (!ID.test(m[1])) return send(res, 400, { error: "id inválido" }), true;
+        if (!ID.test(m[1])) return send(res, 400, { error: "无效的 ID" }), true;
         return send(res, 200, await schedule(m[1])), true;
       }
       if ((m = /^\/api\/schedules\/([^/]+)\/trigger$/.exec(path)) && req.method === "POST") {
-        if (!ID.test(m[1])) return send(res, 400, { error: "id inválido" }), true;
+        if (!ID.test(m[1])) return send(res, 400, { error: "无效的 ID" }), true;
         await multica(["autopilot", "trigger", m[1]]);
         onScheduleStart(m[1]);
         return send(res, 200, { ok: true }), true;
       }
       if ((m = /^\/api\/schedules\/([^/]+)\/status$/.exec(path)) && req.method === "POST") {
         const { status } = await readJson(req);
-        if (!ID.test(m[1]) || !["active", "paused"].includes(status)) return send(res, 400, { error: "status inválido" }), true;
+        if (!ID.test(m[1]) || !["active", "paused"].includes(status)) return send(res, 400, { error: "无效的状态" }), true;
         await multica(["autopilot", "update", m[1], "--status", status]);
         return send(res, 200, { ok: true }), true;
       }
       if ((m = /^\/api\/agents\/([^/]+)\/task$/.exec(path)) && req.method === "POST") {
         const { title, prompt } = await readJson(req);
         if (!ID.test(m[1]) || !String(title ?? "").trim() || !String(prompt ?? "").trim()) {
-          return send(res, 400, { error: "Informe título e instruções." }), true;
+          return send(res, 400, { error: "请输入标题和指令。" }), true;
         }
         const issue = await withTempFile(String(prompt) + FOOTER, (file) =>
           multica(["issue", "create", "--title", String(title).slice(0, 200), "--description-file", file, "--allow-external-file",
@@ -237,28 +237,28 @@ export function createActions({ multica, redact, onChange, onStart = () => {}, o
       }
       if ((m = /^\/api\/issues\/([^/]+)\/comment$/.exec(path)) && req.method === "POST") {
         const { text, agentId, agentName } = await readJson(req);
-        if (!ID.test(m[1]) || !String(text ?? "").trim()) return send(res, 400, { error: "Escreva a instrução." }), true;
+        if (!ID.test(m[1]) || !String(text ?? "").trim()) return send(res, 400, { error: "请输入指令。" }), true;
         // A menção é o que acorda o agente: comentário sem menção não dispara run.
-        const mention = agentId && ID.test(agentId) ? `[@${String(agentName ?? "agente").replace(/[[\]]/g, "")}](mention://agent/${agentId}) ` : "";
+        const mention = agentId && ID.test(agentId) ? `[@${String(agentName ?? "智能体").replace(/[[\]]/g, "")}](mention://agent/${agentId}) ` : "";
         await withTempFile(mention + String(text) + FOOTER, (file) =>
           multica(["issue", "comment", "add", m[1], "--content-file", file, "--allow-external-file"]),
         );
-        if (mention) onStart(agentId, "Respondendo comentário");
+        if (mention) onStart(agentId, "正在回复评论");
         return send(res, 200, { ok: true }), true;
       }
       if ((m = /^\/api\/runs\/([^/]+)\/cancel$/.exec(path)) && req.method === "POST") {
-        if (!ID.test(m[1])) return send(res, 400, { error: "id inválido" }), true;
+        if (!ID.test(m[1])) return send(res, 400, { error: "无效的 ID" }), true;
         await multica(["issue", "cancel-task", m[1]]);
         return send(res, 200, { ok: true }), true;
       }
       if ((m = /^\/api\/issues\/([^/]+)\/rerun$/.exec(path)) && req.method === "POST") {
-        if (!ID.test(m[1])) return send(res, 400, { error: "id inválido" }), true;
+        if (!ID.test(m[1])) return send(res, 400, { error: "无效的 ID" }), true;
         await multica(["issue", "rerun", m[1]]);
         return send(res, 200, { ok: true }), true;
       }
       if ((m = /^\/api\/issues\/([^/]+)\/status$/.exec(path)) && req.method === "POST") {
         const { status } = await readJson(req);
-        if (!ID.test(m[1]) || !STATUSES.has(status)) return send(res, 400, { error: "status inválido" }), true;
+        if (!ID.test(m[1]) || !STATUSES.has(status)) return send(res, 400, { error: "无效的状态" }), true;
         await multica(["issue", "status", m[1], status]);
         return send(res, 200, { ok: true }), true;
       }
@@ -266,11 +266,11 @@ export function createActions({ multica, redact, onChange, onStart = () => {}, o
       if (history && (await history.handle(req, res, path, url, { send }))) return true;
       if (manage && (await manage.handle(req, res, path, url, { readJson, send }))) return true;
       if (await admin(req, res, path)) return true;
-      return send(res, 404, { error: "rota desconhecida" }), true;
+      return send(res, 404, { error: "未知接口" }), true;
     } catch (e) {
       console.error(`[${new Date().toISOString()}] ${req.method} ${path}: ${e.message}`);
       const detail = clean(String(e.stderr || e.message)).split("\n").filter(Boolean).slice(-2).join(" ");
-      return send(res, e.status ?? 500, { error: `Falhou: ${detail || "erro no Multica"}` }), true;
+      return send(res, e.status ?? 500, { error: `操作失败： ${detail || "Multica 返回错误"}` }), true;
     }
   };
 }

@@ -7,7 +7,7 @@ const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const TZ = "America/Sao_Paulo";
 const when = (iso) => (iso ? new Date(iso).toLocaleString("zh-CN", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
-const THINKING = [["", "Padrão do runtime"], ["off", "Desligado"], ["minimal", "Mínimo"], ["low", "Baixo"], ["medium", "Médio"], ["high", "Alto"], ["xhigh", "Muito alto"], ["max", "Máximo"]];
+const THINKING = [["", "运行时默认值"], ["off", "关闭"], ["minimal", "最低"], ["low", "低"], ["medium", "中"], ["high", "高"], ["xhigh", "很高"], ["max", "最高"]];
 
 /** Markdown mínimo e seguro: escapa tudo e só então aplica negrito, código e quebras. */
 function md(text) {
@@ -23,10 +23,10 @@ function md(text) {
 export function renderConversation(tb, { agent, api, flash }) {
   let timer = null;
   let alive = true;
-  tb.innerHTML = `<p class="muted small">Fale com <b>${esc(agent.name)}</b> por aqui: cada mensagem vira um comentário na issue de conversa do agente, que acorda e responde. O fio fica salvo no Multica.</p>
+  tb.innerHTML = `<p class="muted small">在这里与 <b>${esc(agent.name)}</b> 对话。消息会作为任务评论保存在 Multica，并触发智能体回复。</p>
     <div class="chat-log"><p class="muted">正在加载…</p></div>
     <form class="chat-send">
-      <textarea rows="3" required placeholder="Escreva para o agente… (Ctrl+Enter envia)"></textarea>
+      <textarea rows="3" required placeholder="输入给智能体的消息…（Ctrl+Enter 发送）"></textarea>
       <div class="row"><span class="muted small chat-state"></span><button type="submit" class="primary">发送</button></div>
     </form>`;
   const log = tb.querySelector(".chat-log");
@@ -40,9 +40,9 @@ export function renderConversation(tb, { agent, api, flash }) {
       if (!alive) return;
       const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 20;
       log.innerHTML = c.messages.length
-        ? c.messages.map((m) => `<div class="msg ${m.role}"><div class="who">${m.role === "agent" ? `${esc(agent.emoji)} ${esc(agent.name)}` : "Você"} · ${when(m.at)}</div><div class="txt">${md(m.text)}</div></div>`).join("")
-        : `<p class="muted">Nenhuma mensagem ainda. A primeira cria a conversa.</p>`;
-      state.textContent = c.issue ? `${c.issue.identifier}${c.working ? " · ✍️ agente trabalhando…" : ""}` : "";
+        ? c.messages.map((m) => `<div class="msg ${m.role}"><div class="who">${m.role === "agent" ? `${esc(agent.emoji)} ${esc(agent.name)}` : "你"} · ${when(m.at)}</div><div class="txt">${md(m.text)}</div></div>`).join("")
+        : `<p class="muted">暂无消息。发送第一条消息即可开始对话。</p>`;
+      state.textContent = c.issue ? `${c.issue.identifier}${c.working ? " · ✍️ 智能体正在工作…" : ""}` : "";
       if (atBottom || !log.dataset.seen) log.scrollTop = log.scrollHeight;
       log.dataset.seen = "1";
     } catch (e) {
@@ -57,7 +57,7 @@ export function renderConversation(tb, { agent, api, flash }) {
     try {
       await api(`/api/agents/${agent.id}/conversation`, { text: ta.value, agentName: agent.name });
       ta.value = "";
-      flash("Mensagem enviada; o agente foi acordado.");
+      flash("消息已发送，智能体已启动。");
       await load();
     } catch (err) {
       flash(err.message, false);
@@ -80,7 +80,7 @@ export function renderConversation(tb, { agent, api, flash }) {
 
 export function renderChats(tb, { agent, api }) {
   let alive = true;
-  tb.innerHTML = `<p class="muted small">Conversas 待处理 no app do Multica com este agente. Aqui aparecem as respostas e os passos do agente; o app do Multica não deixa abrir chat novo por fora — para falar com ele pelo painel, use a aba <b>💬 Conversa</b>.</p><div class="chat-sessions"><p class="muted">正在加载…</p></div>`;
+  tb.innerHTML = `<p class="muted small">查看此智能体在 Multica 中的对话、回复和执行步骤。要发送消息，请打开「对话」。</p><div class="chat-sessions"><p class="muted">正在加载…</p></div>`;
   const box = tb.querySelector(".chat-sessions");
   api(`/api/agents/${agent.id}/chats`)
     .then(({ sessions }) => {
@@ -88,11 +88,11 @@ export function renderChats(tb, { agent, api }) {
       box.innerHTML = sessions.length
         ? sessions
             .map(
-              (s) => `<div class="run"><div class="run-top"><b>💬 Chat${s.by ? ` com ${esc(s.by)}` : ""}</b><small class="muted">${s.runs.length} turno(s) · ${when(s.runs[0]?.at)}</small></div>
+              (s) => `<div class="run"><div class="run-top"><b>💬 Chat${s.by ? ` com ${esc(s.by)}` : ""}</b><small class="muted">${s.runs.length} 轮 · ${when(s.runs[0]?.at)}</small></div>
                 ${s.runs.map((r) => `<div class="chat-turn"><button type="button" data-run="${r.id}">▼ ${when(r.at)} · ${esc(r.status)}</button><div class="turn-body" hidden></div></div>`).join("")}</div>`,
             )
             .join("")
-        : `<p class="muted">Nenhum chat recente.</p>`;
+        : `<p class="muted">暂无近期对话。</p>`;
     })
     .catch((e) => (box.innerHTML = `<p class="error">${esc(e.message)}</p>`));
   box.addEventListener("click", async (e) => {
@@ -109,7 +109,7 @@ export function renderChats(tb, { agent, api }) {
       const parts = [];
       let tools = [];
       const flush = () => {
-        if (tools.length) parts.push(`<details class="tools"><summary>🔧 ${tools.length} passo(s)</summary>${tools.join("")}</details>`);
+        if (tools.length) parts.push(`<details class="tools"><summary>🔧 ${tools.length} 个步骤</summary>${tools.join("")}</details>`);
         tools = [];
       };
       for (const m of messages) {
@@ -145,40 +145,40 @@ export function renderConfig(tb, { agent, api, flash, onChanged }) {
     const assigned = new Set(a.skills.map((s) => s.id));
     tb.innerHTML = `
       <form class="cfg">
-        <div class="section-title">Identidade</div>
+        <div class="section-title">基本信息</div>
         <label>名称<input name="name" maxlength="120" value="${esc(a.name)}" required /></label>
         <label>描述<textarea name="description" rows="2" maxlength="2000">${esc(a.description)}</textarea></label>
-        <label>指令 <small class="muted">(prompt de sistema do agente)</small><textarea name="instructions" rows="12" class="mono">${esc(a.instructions)}</textarea></label>
-        <div class="section-title">Execução</div>
+        <label>指令 <small class="muted">(智能体的系统提示词)</small><textarea name="instructions" rows="12" class="mono">${esc(a.instructions)}</textarea></label>
+        <div class="section-title">运行</div>
         <div class="grid2">
-          <label>Runtime / máquina<select name="runtimeId">${rtOpts(a.runtimeId)}</select></label>
+          <label>运行时 / 机器<select name="runtimeId">${rtOpts(a.runtimeId)}</select></label>
           <label>模型<input name="model" value="${esc(a.model)}" placeholder="运行时默认设置" /></label>
-          <label>Raciocínio<select name="thinkingLevel">${THINKING.map(([v, l]) => `<option value="${v}" ${v === a.thinkingLevel ? "selected" : ""}>${l}</option>`).join("")}</select></label>
-          <label>Runs simultâneas<input name="maxConcurrent" type="number" min="1" max="50" value="${a.maxConcurrent ?? 1}" /></label>
-          <label>Quem pode acionar<select name="permission">
-            <option value="workspace" ${a.permissionMode !== "private" ? "selected" : ""}>Todo o workspace</option>
-            <option value="private" ${a.permissionMode === "private" ? "selected" : ""}>Só o dono</option></select></label>
+          <label>推理强度<select name="thinkingLevel">${THINKING.map(([v, l]) => `<option value="${v}" ${v === a.thinkingLevel ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+          <label>同时运行数<input name="maxConcurrent" type="number" min="1" max="50" value="${a.maxConcurrent ?? 1}" /></label>
+          <label>谁可以启动<select name="permission">
+            <option value="workspace" ${a.permissionMode !== "private" ? "selected" : ""}>工作区所有成员</option>
+            <option value="private" ${a.permissionMode === "private" ? "selected" : ""}>仅所有者</option></select></label>
         </div>
-        <button type="submit" class="primary wide">💾 保存 alterações</button>
+        <button type="submit" class="primary wide">💾 保存更改</button>
       </form>
       <form class="cfg-skills">
-        <div class="section-title">Skills do workspace (${workspaceSkills.length})</div>
+        <div class="section-title">工作区技能 (${workspaceSkills.length})</div>
         ${workspaceSkills.length
           ? workspaceSkills.map((s) => `<label class="check"><input type="checkbox" value="${s.id}" ${assigned.has(s.id) ? "checked" : ""}/> <b>${esc(s.name)}</b><small class="muted">${esc(s.description)}</small></label>`).join("")
-          : `<p class="muted">Nenhuma skill no workspace.</p>`}
-        ${workspaceSkills.length ? `<button type="submit">保存 skills</button>` : ""}
+          : `<p class="muted">工作区暂无技能。</p>`}
+        ${workspaceSkills.length ? `<button type="submit">保存技能</button>` : ""}
       </form>
-      <div class="section-title">Segredos</div>
-      <p class="muted small">Variáveis de ambiente: ${a.envKeys} · MCP: ${a.hasMcp ? "configurado" : "nenhum"}. Por segurança, segredos não passam pelo painel — edite no app do Multica.</p>
-      <div class="section-title">Copiar agente</div>
+      <div class="section-title">机密配置</div>
+      <p class="muted small">环境变量： ${a.envKeys} · MCP: ${a.hasMcp ? "已配置" : "无"}. 请在 Multica 中编辑机密配置。</p>
+      <div class="section-title">复制智能体</div>
       <form class="cfg-copy grid2">
-        <label>名称 da cópia<input name="name" value="${esc(a.name)} (cópia)" maxlength="120" /></label>
-        <label>Em qual runtime<select name="runtimeId">${rtOpts(a.runtimeId)}</select></label>
-        <button type="submit">📄 Criar cópia</button>
+        <label>副本名称<input name="name" value="${esc(a.name)} （副本）" maxlength="120" /></label>
+        <label>选择运行时<select name="runtimeId">${rtOpts(a.runtimeId)}</select></label>
+        <button type="submit">📄 创建副本</button>
       </form>
-      <div class="section-title danger-title">Zona de risco</div>
-      <button type="button" class="danger" data-act="archive">🗄️ 归档 agente</button>
-      <p class="muted small">Criado em ${when(a.createdAt)} · atualizado em ${when(a.updatedAt)}</p>`;
+      <div class="section-title danger-title">危险操作</div>
+      <button type="button" class="danger" data-act="archive">🗄️ 归档智能体</button>
+      <p class="muted small">创建于 ${when(a.createdAt)} · 更新于 ${when(a.updatedAt)}</p>`;
 
     const form = tb.querySelector("form.cfg");
     form.addEventListener("submit", async (e) => {
@@ -193,8 +193,8 @@ export function renderConfig(tb, { agent, api, flash, onChanged }) {
         maxConcurrent: a.maxConcurrent, runtimeId: a.runtimeId, permission: a.permissionMode === "private" ? "private" : "workspace",
       };
       const diff = Object.fromEntries(Object.entries(next).filter(([k, v]) => v !== prev[k]));
-      if (!Object.keys(diff).length) return flash("Nada mudou.");
-      if (diff.runtimeId && !confirm("Trocar o runtime muda a máquina onde o agente roda. Continuar?")) return;
+      if (!Object.keys(diff).length) return flash("没有更改。");
+      if (diff.runtimeId && !confirm("更换运行时会改变智能体使用的机器。继续吗？")) return;
       try {
         await api(`/api/agents/${a.id}/update`, diff);
         Object.assign(a, diff, diff.permission ? { permissionMode: diff.permission === "private" ? "private" : "public_to" } : {});
@@ -217,18 +217,18 @@ export function renderConfig(tb, { agent, api, flash, onChanged }) {
     tb.querySelector("form.cfg-copy").addEventListener("submit", async (e) => {
       e.preventDefault();
       const f = e.target.elements;
-      if (!confirm(`Criar uma cópia de "${a.name}"?`)) return;
+      if (!confirm(`创建「${a.name}」的副本？`)) return;
       try {
         const c = await api(`/api/agents/${a.id}/copy`, { name: f.name.value, runtimeId: f.runtimeId.value === a.runtimeId ? "" : f.runtimeId.value });
-        flash(`Cópia criada: ${c.name}`);
+        flash(`已创建副本： ${c.name}`);
         onChanged();
       } catch (err) {
         flash(err.message, false);
       }
     });
     tb.querySelector('[data-act="archive"]').addEventListener("click", async () => {
-      const typed = prompt(`归档 desativa "${a.name}". Para confirmar, digite o nome do agente:`);
-      if (typed !== a.name) return typed !== null && flash("名称 não confere; nada foi arquivado.", false);
+      const typed = prompt(`归档会停用「${a.name}」。请输入智能体名称以确认。`);
+      if (typed !== a.name) return typed !== null && flash("名称不匹配，归档已取消。", false);
       try {
         await api(`/api/agents/${a.id}/archive`, {});
         flash("智能体 arquivado.");
@@ -256,16 +256,16 @@ export function renderLook(tb, { agent, api, flash, onChanged }) {
   let sel = { outfit: cur.outfit ?? "liso", skin: cur.skin, hair: cur.hair };
   const draw = () => {
     tb.innerHTML = `
-      <div class="section-title">Uniforme</div>
+      <div class="section-title">服装</div>
       <div class="looks">${Object.entries(OUTFITS)
         .map(([k, o]) => `<button type="button" class="look ${sel.outfit === k ? "on" : ""}" data-outfit="${k}" title="${esc(o.label)}"><i style="background:${SWATCH[k]}"></i><span>${esc(o.label)}</span></button>`)
         .join("")}</div>
-      <div class="section-title">Tom de pele</div>
-      <div class="dots">${SKINS.map((c) => `<button type="button" class="dotpick ${sel.skin === c ? "on" : ""}" data-skin="${c}" style="background:${hex(c)}" aria-label="pele"></button>`).join("")}<button type="button" class="dotpick auto ${sel.skin == null ? "on" : ""}" data-skin="" title="automático">A</button></div>
-      <div class="section-title">Cabelo</div>
-      <div class="dots">${HAIRS.map((c) => `<button type="button" class="dotpick ${sel.hair === c ? "on" : ""}" data-hair="${c}" style="background:${hex(c)}" aria-label="cabelo"></button>`).join("")}<button type="button" class="dotpick auto ${sel.hair == null ? "on" : ""}" data-hair="" title="automático">A</button></div>
-      <div class="row" style="margin-top:12px"><button type="button" data-reset>↺ Voltar ao padrão</button><button type="button" class="primary" data-save>💾 保存 visual</button></div>
-      <p class="muted small">O visual vale para todos que abrem o painel. Atualiza no escritório em segundos.</p>`;
+      <div class="section-title">肤色</div>
+      <div class="dots">${SKINS.map((c) => `<button type="button" class="dotpick ${sel.skin === c ? "on" : ""}" data-skin="${c}" style="background:${hex(c)}" aria-label="肤色"></button>`).join("")}<button type="button" class="dotpick auto ${sel.skin == null ? "on" : ""}" data-skin="" title="自动">A</button></div>
+      <div class="section-title">发色</div>
+      <div class="dots">${HAIRS.map((c) => `<button type="button" class="dotpick ${sel.hair === c ? "on" : ""}" data-hair="${c}" style="background:${hex(c)}" aria-label="发色"></button>`).join("")}<button type="button" class="dotpick auto ${sel.hair == null ? "on" : ""}" data-hair="" title="自动">A</button></div>
+      <div class="row" style="margin-top:12px"><button type="button" data-reset>↺ 恢复默认</button><button type="button" class="primary" data-save>💾 保存外观</button></div>
+      <p class="muted small">外观对所有访问者生效，几秒后在办公室更新。</p>`;
   };
   tb.addEventListener("click", async (e) => {
     const b = e.target.closest("button");
@@ -276,7 +276,7 @@ export function renderLook(tb, { agent, api, flash, onChanged }) {
     else if ("save" in b.dataset || "reset" in b.dataset) {
       try {
         await api(`/api/agents/${agent.id}/look`, "reset" in b.dataset ? { reset: true } : sel);
-        flash("reset" in b.dataset ? "Visual padrão restaurado." : "Visual salvo.");
+        flash("reset" in b.dataset ? "已恢复默认外观。" : "外观已保存。");
         onChanged();
       } catch (err) {
         flash(err.message, false);

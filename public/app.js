@@ -16,7 +16,7 @@ const STATES = {
   idle: { label: "空闲" },
   offline: { label: "离线" },
 };
-const SCHED_FILTERS = [["all", "全部"], ["active", "Ativas"], ["paused", "Pausadas"]];
+const SCHED_FILTERS = [["all", "全部"], ["active", "已启用"], ["paused", "已暂停"]];
 
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) =>
@@ -133,7 +133,7 @@ function setSide(s) {
   for (const b of document.querySelectorAll(".side-tabs button")) b.setAttribute("aria-selected", String(b.dataset.side === s));
   $("#agent-list").hidden = s !== "agents";
   $("#schedule-list").hidden = s !== "schedules";
-  $("#search").placeholder = s === "agents" ? "搜索智能体或任务…" : "搜索 tarefa ou agente…";
+  $("#search").placeholder = s === "agents" ? "搜索智能体或任务…" : "搜索任务或智能体…";
   renderSide();
 }
 document.querySelector(".side-tabs").addEventListener("click", (e) => {
@@ -158,7 +158,7 @@ function renderStats() {
     (() => {
       const worked = data.agents.filter((a) => a.today?.runs);
       const runs = worked.reduce((t, a) => t + a.today.runs, 0);
-      return worked.length ? `<span class="chip" title="智能体 que já executaram algo 今天 · 次运行 do dia">⚡ <b>${worked.length}</b> 位今天已工作 · ${runs} 次运行</span>` : "";
+      return worked.length ? `<span class="chip" title="今日已执行任务的智能体和运行次数">⚡ <b>${worked.length}</b> 位智能体今日已工作 · ${runs} 次运行</span>` : "";
     })();
   $("#count-agents").textContent = data.agents.length;
   $("#count-schedules").textContent = data.schedules?.length ?? 0;
@@ -210,7 +210,7 @@ function renderSide() {
               .join(""),
         )
         .join("")
-    : `<li class="empty">Nenhum agente encontrado.</li>`;
+    : `<li class="empty">没有找到匹配的智能体。</li>`;
 }
 
 function renderMain() {
@@ -222,7 +222,7 @@ function renderMain() {
     $("#grid2d").innerHTML = groups
       .map(
         ({ m, agents }) =>
-          `<h2><span class="dot ${m.online ? "working" : "offline"}"></span>💻 ${esc(m.name)} <small>${agents.length} agentes</small></h2><div class="cards">` +
+          `<h2><span class="dot ${m.online ? "working" : "offline"}"></span>💻 ${esc(m.name)} <small>${agents.length} 位智能体</small></h2><div class="cards">` +
           agents
             .map(
               (a) => `<div class="card ${a.state} ${a.id === selectedId ? "selected" : ""}" data-id="${a.id}">
@@ -352,7 +352,7 @@ panel.init();
 $("#auth").addEventListener("click", async () => {
   const me = await fetch("/api/me").then((r) => r.json());
   if (me.auth) {
-    if (!confirm("退出 do painel?")) return;
+    if (!confirm("退出办公室？")) return;
     await panel.logout();
     location.reload();
   } else panel.login();
@@ -570,7 +570,7 @@ const palette = createPalette({
       { key: "sede", name: "总部 · 全部" },
       { key: "bairro:machine", name: "按机器分楼" },
       { key: "bairro:runtime", name: "按运行时分楼" },
-      ...machines.map((m) => ({ key: `um:machine:${m}`, name: `办公楼 de ${m}` })),
+      ...machines.map((m) => ({ key: `um:machine:${m}`, name: `办公楼 · ${m}` })),
     ];
   },
   onAgent: (id) => {
@@ -602,11 +602,11 @@ document.addEventListener("click", async (e) => {
   if (!e.target.closest("[data-ack-all]")) return;
   if (!panel.auth.auth) return panel.login();
   const fails = data.schedules.filter((s) => s.lastRun?.status === "failed" && !s.lastRun.acked);
-  if (!fails.length) return toast("Nenhuma falha pendente.");
-  if (!confirm(`归档 ${fails.length} falha(s) pendente(s)? Elas saem das 待处理事项s do painel (nada muda no Multica).`)) return;
+  if (!fails.length) return toast("没有待处理的失败记录。");
+  if (!confirm(`归档 ${fails.length} 条待处理的失败记录？这些记录将从面板的待处理列表移除。`)) return;
   try {
     for (const s of fails) await api("/api/acks", { id: s.lastRun.id, ack: true });
-    toast(`${fails.length} falha(s) arquivada(s).`);
+    toast(`已归档 ${fails.length} 条失败记录。`);
     refreshNow();
   } catch (err) {
     toast(err.message, false);
@@ -633,7 +633,7 @@ document.addEventListener("keydown", (e) => {
     return syncModeButton();
   }
   if (k === "f") return feed.toggle();
-  if (k === "?") return toast("Atalhos: Ctrl+K busca · / buscar · 1 3D · 2 列表 · 3 日程 · O orla · E escritório · F feed · Esc fechar");
+  if (k === "?") return toast("快捷键：Ctrl+K 快速搜索 · / 搜索 · 1 3D · 2 列表 · 3 日程 · O 海滨 · E 办公室 · F 实时动态 · Esc 关闭");
 });
 
 // ---------- link direto (#a=agente, #s=agendada, #p=prédio, #v=visão) ----------
@@ -707,25 +707,25 @@ function openSpotMenu({ agentId, x, y }) {
   const opts = data.agents
     .slice()
     .sort((a, b) => (a.state === "offline") - (b.state === "offline") || a.name.localeCompare(b.name))
-    .map((a) => `<option value="${a.id}" ${a.id === agentId ? "selected" : ""}>${esc(a.emoji)} ${esc(a.name)} · ${esc(a.machine)}${a.state === "offline" ? " (offline)" : ""}</option>`)
+    .map((a) => `<option value="${a.id}" ${a.id === agentId ? "selected" : ""}>${esc(a.emoji)} ${esc(a.name)} · ${esc(a.machine)}${a.state === "offline" ? "（离线）" : ""}</option>`)
     .join("");
   spotMenu.innerHTML = `
     <button type="button" class="sm-close" aria-label="关闭">✕</button>
     ${owner
-      ? `<div class="sm-title">🪑 Mesa de <b>${esc(owner.emoji)} ${esc(owner.name)}</b></div>
+      ? `<div class="sm-title">🪑 工位： <b>${esc(owner.emoji)} ${esc(owner.name)}</b></div>
          <div class="sm-sub">💻 ${esc(owner.machine)} · ${esc(owner.provider)} · ${STATE_TXT[owner.state]}</div>
          <div class="sm-actions">
-           <button type="button" class="primary" data-sm="new" data-id="${owner.id}">➕ Nova tarefa</button>
-           <button type="button" data-sm="chat" data-id="${owner.id}">💬 Conversar</button>
-           <button type="button" data-sm="activity" data-id="${owner.id}">📜 Atividade</button>
+           <button type="button" class="primary" data-sm="new" data-id="${owner.id}">➕ 新建任务</button>
+           <button type="button" data-sm="chat" data-id="${owner.id}">💬 对话r</button>
+           <button type="button" data-sm="activity" data-id="${owner.id}">📜 运行记录</button>
          </div>
-         <div class="sm-sep">ou iniciar outro agente aqui</div>`
-      : `<div class="sm-title">✨ Iniciar um agente</div><div class="sm-sub">Escolha quem vai trabalhar e o que fazer.</div>`}
+         <div class="sm-sep">也可以在这里启动另一个智能体</div>`
+      : `<div class="sm-title">✨ 启动智能体</div><div class="sm-sub">选择智能体和要执行的任务。</div>`}
     <select class="sm-pick" aria-label="智能体">${opts}</select>
     <div class="sm-actions">
-      <button type="button" class="primary" data-sm="new">➕ Nova tarefa</button>
-      <button type="button" data-sm="chat">💬 Conversar</button>
-      <button type="button" data-sm="activity">👤 Ver agente</button>
+      <button type="button" class="primary" data-sm="new">➕ 新建任务</button>
+      <button type="button" data-sm="chat">💬 对话r</button>
+      <button type="button" data-sm="activity">👤 查看智能体</button>
     </div>`;
   spotMenu.hidden = false;
   const r = spotMenu.getBoundingClientRect();

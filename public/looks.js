@@ -3,15 +3,15 @@
 import * as THREE from "three";
 
 export const OUTFITS = {
-  liso: { label: "Camisa lisa (cor do agente)", pants: null },
+  liso: { label: "纯色衬衫（智能体配色）", pants: null },
   hotel: { label: "Polo Agent Office", pants: 0x1f2933 },
-  social: { label: "Social com gravata", pants: 0x24324a },
+  social: { label: "正装配领带", pants: 0x24324a },
   terno: { label: "Terno executivo", pants: 0x1a1d24 },
-  recepcao: { label: "Uniforme de recepção", pants: 0x111827 },
-  chef: { label: "Dólmã de chef", pants: 0x2b2b2b },
+  recepcao: { label: "接待制服", pants: 0x111827 },
+  chef: { label: "厨师服", pants: 0x2b2b2b },
   esporte: { label: "Moletom esportivo", pants: 0x4b5563 },
-  verao: { label: "Camisa florida (verão)", pants: 0xd6c7a1 },
-  flamengo: { label: "Camisa do Flamengo", pants: 0x111111 },
+  verao: { label: "夏日花衬衫", pants: 0xd6c7a1 },
+  flamengo: { label: "弗拉门戈球衣", pants: 0x111111 },
 };
 export const SKINS = [0xf1c9a5, 0xffdbac, 0xe0ac69, 0xd9a066, 0xc68642, 0x8d5524];
 export const HAIRS = [0x0f0f0f, 0x2b1b0e, 0x4a2c17, 0x8b5a2b, 0xb98b5b, 0xe5c07b, 0x6e6e6e, 0xb03a2e];

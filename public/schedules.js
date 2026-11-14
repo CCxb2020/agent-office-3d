@@ -7,8 +7,8 @@ const esc = (s) =>
 
 const TZ = "America/Sao_Paulo";
 const TZ_OFFSET_MIN = { "America/Sao_Paulo": -180, UTC: 0, "Etc/UTC": 0 }; // Brasil sem horário de verão desde 2019
-const DOW = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-const RUN_STATUS = { issue_created: "📝 issue criada", completed: "✅ 已完成", failed: "❌ 失败", running: "▶️ rodando", queued: "⏳ 排队中", skipped: "⏭ pulada", cancelled: "⏹ 已取消" };
+const DOW = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+const RUN_STATUS = { issue_created: "📝 issue criada", completed: "✅ 已完成", failed: "❌ 失败", running: "▶️ 运行中", queued: "⏳ 排队中", skipped: "⏭ pulada", cancelled: "⏹ 已取消" };
 
 // ---------- cron ----------
 
@@ -47,18 +47,18 @@ export function cronText(expr) {
   const c = parseCron(expr);
   if (!c) return expr ?? "";
   const [m, h, dom, , dow] = c.raw;
-  if (m.startsWith("*/") && h === "*") return `A cada ${m.slice(2)} min`;
-  if (m.startsWith("*/")) return `A cada ${m.slice(2)} min, das ${two(Math.min(...c.hour))}h às ${two(Math.max(...c.hour))}h`;
-  if (h === "*") return m === "0" ? "De hora em hora" : `De hora em hora (min ${two(m)})`;
-  if (h.startsWith("*/")) return `A cada ${h.slice(2)} h`;
+  if (m.startsWith("*/") && h === "*") return `每 ${m.slice(2)} 分钟`;
+  if (m.startsWith("*/")) return `${two(Math.min(...c.hour))} 点至 ${two(Math.max(...c.hour))} 点，每 ${m.slice(2)} 分钟`;
+  if (h === "*") return m === "0" ? "每小时" : `每小时第 ${two(m)} 分钟`;
+  if (h.startsWith("*/")) return `每 ${h.slice(2)} 小时`;
   const hours = [...c.hour].sort((a, b) => a - b);
   const mins = [...c.min].sort((a, b) => a - b);
-  const times = hours.length > 4 ? `das ${two(hours[0])}h às ${two(hours.at(-1))}h (${hours.length}×)` : hours.flatMap((hh) => mins.map((mm) => `${two(hh)}:${two(mm)}`)).join(" e ");
-  let days = "Todo dia";
-  if (dom !== "*") days = c.dom.size > 1 ? `Dias ${[...c.dom].sort((a, b) => a - b).join(" e ")} de cada mês` : `Dia ${dom} de cada mês`;
-  else if (dow === "1-5") days = "Dias úteis";
+  const times = hours.length > 4 ? `${two(hours[0])} 点至 ${two(hours.at(-1))} 点 (${hours.length}×)` : hours.flatMap((hh) => mins.map((mm) => `${two(hh)}:${two(mm)}`)).join("、");
+  let days = "每天";
+  if (dom !== "*") days = c.dom.size > 1 ? `每月 ${[...c.dom].sort((a, b) => a - b).join("、")} 日` : `每月 ${dom} 日`;
+  else if (dow === "1-5") days = "工作日";
   else if (dow !== "*") days = [...c.dow].sort().map((d) => DOW[d]).join(", ").replace(/^./, (s) => s.toUpperCase());
-  return `${days} às ${times}`;
+  return `${days} ${times}`;
 }
 
 /** Execuções do cron entre agora e +horas (em instantes UTC). */
@@ -88,15 +88,15 @@ function when(iso) {
   const tomorrow = new Date(Date.now() + 86400_000);
   const hm = fmt({ hour: "2-digit", minute: "2-digit" });
   if (day(d) === day(today)) return `今天 ${hm}`;
-  if (day(d) === day(tomorrow)) return `amanhã ${hm}`;
-  if (d < today && day(d) === day(new Date(Date.now() - 86400_000))) return `ontem ${hm}`;
+  if (day(d) === day(tomorrow)) return `明天 ${hm}`;
+  if (d < today && day(d) === day(new Date(Date.now() - 86400_000))) return `昨天 ${hm}`;
   return `${fmt({ day: "2-digit", month: "2-digit" })} ${hm}`;
 }
 
 function cadence(s) {
   const t = s.triggers.filter((x) => x.kind === "schedule" && x.cron);
   if (t.length) return t.map((x) => cronText(x.cron)).join(" + ");
-  return s.triggers.some((x) => x.kind === "webhook") ? "Por webhook" : "Manual";
+  return s.triggers.some((x) => x.kind === "webhook") ? "由 Webhook 触发" : "手动";
 }
 
 // ---------- lista lateral ----------
@@ -114,10 +114,10 @@ export function renderScheduleList(el, { data, query, filter, selectedId }) {
           const a = agents.get(s.agentId);
           return `<li class="sched ${s.id === selectedId ? "selected" : ""} ${s.status}" data-sched="${s.id}">
             <span class="when">${s.status === "paused" ? "⏸ 已暂停" : esc(when(s.nextRunAt))}</span>
-            <span class="name">${s.lastRun?.status === "failed" && !s.lastRun.acked ? `<i class="fail-dot" title="Última execução 失败"></i>` : ""}${esc(s.title)}<small>${a ? `${esc(a.emoji)} ${esc(a.name)} · ` : ""}${esc(cadence(s))}</small></span></li>`;
+            <span class="name">${s.lastRun?.status === "failed" && !s.lastRun.acked ? `<i class="fail-dot" title="上次运行失败"></i>` : ""}${esc(s.title)}<small>${a ? `${esc(a.emoji)} ${esc(a.name)} · ` : ""}${esc(cadence(s))}</small></span></li>`;
         })
         .join("")
-    : `<li class="empty">Nenhuma tarefa encontrada.</li>`;
+    : `<li class="empty">没有找到匹配的任务。</li>`;
 }
 
 // ---------- agenda (visão principal) ----------
@@ -136,10 +136,10 @@ export function renderAgenda(el, { data, selectedId }) {
   const fails = data.schedules.filter((s) => s.lastRun?.status === "failed" && !s.lastRun.acked).length;
   const in24 = rows.reduce((n, r) => n + r.occ.length, 0);
   const next = rows.filter((r) => r.occ.length).sort((a, b) => a.occ[0] - b.occ[0])[0];
-  const startHour = new Date(now).toLocaleString("zh-CN", { timeZone: TZ, hour: "2-digit" });
+  const startHour = new Date(now).toLocaleString("zh-CN", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
   const hourMarks = Array.from({ length: H / 3 + 1 }, (_, i) => {
     const t = now + i * 3 * 3600_000;
-    return `<span style="left:${(i * 3 * 100) / H}%">${new Date(t).toLocaleTimeString("zh-CN", { timeZone: TZ, hour: "2-digit" })}h</span>`;
+    return `<span style="left:${(i * 3 * 100) / H}%">${new Date(t).toLocaleTimeString("zh-CN", { timeZone: TZ, hour: "2-digit" })}</span>`;
   }).join("");
 
   const row = ({ s, occ }) => {
@@ -148,26 +148,26 @@ export function renderAgenda(el, { data, selectedId }) {
       .map((t) => `<i style="left:${((t - now) / (H * 3600_000)) * 100}%" title="${new Date(t).toLocaleString("zh-CN", { timeZone: TZ })}"></i>`)
       .join("");
     return `<div class="arow ${s.status} ${s.id === selectedId ? "selected" : ""}" data-sched="${s.id}">
-      <div class="atitle"><b>${s.lastRun?.status === "failed" && !s.lastRun.acked ? `<i class="fail-dot" title="Última execução 失败"></i>` : ""}${esc(s.title)}</b><small>${a ? `${esc(a.emoji)} ${esc(a.name)}` : "—"} · ${esc(cadence(s))}</small></div>
+      <div class="atitle"><b>${s.lastRun?.status === "failed" && !s.lastRun.acked ? `<i class="fail-dot" title="上次运行失败"></i>` : ""}${esc(s.title)}</b><small>${a ? `${esc(a.emoji)} ${esc(a.name)}` : "—"} · ${esc(cadence(s))}</small></div>
       <div class="anext">${s.status === "paused" ? `<span class="badge paused">已暂停</span>` : esc(when(s.nextRunAt))}</div>
       <div class="atrack">${ticks}</div>
     </div>`;
   };
   const sorted = rows.sort((a, b) => (a.s.status === b.s.status ? (a.occ[0] ?? 9e15) - (b.occ[0] ?? 9e15) : a.s.status === "active" ? -1 : 1));
   el.innerHTML = `
-    <div class="agenda-top"><h2>📅 日程 das próximas 24 horas</h2><div class="row">${fails ? `<button type="button" data-ack-all>📦 归档 todas as falhas (${fails})</button>` : ""}<button type="button" class="primary" data-new-sched>➕ 新建定时任务</button></div></div>
+    <div class="agenda-top"><h2>📅 未来 24 小时日程</h2><div class="row">${fails ? `<button type="button" data-ack-all>📦 归档所有失败记录 (${fails})</button>` : ""}<button type="button" class="primary" data-new-sched>➕ 新建定时任务</button></div></div>
     <div class="agenda-head">
-      <div class="kpi"><b>${active.length}</b><span>tarefas ativas</span></div>
-      <div class="kpi"><b>${data.schedules.length - active.length}</b><span>pausadas</span></div>
-      <div class="kpi ${fails ? "bad" : ""}"><b>${fails}</b><span>falhas pendentes</span></div>
-      <div class="kpi"><b>${in24}</b><span>execuções nas próximas 24 h</span></div>
-      <div class="kpi wide"><b>${next ? new Date(next.occ[0]).toLocaleTimeString("zh-CN", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }) : "—"}</b><span>${next ? `próxima: ${esc(next.s.title)}` : "nenhuma nas próximas 24 h"}</span></div>
+      <div class="kpi"><b>${active.length}</b><span>已启用的任务</span></div>
+      <div class="kpi"><b>${data.schedules.length - active.length}</b><span>已暂停</span></div>
+      <div class="kpi ${fails ? "bad" : ""}"><b>${fails}</b><span>待处理的失败</span></div>
+      <div class="kpi"><b>${in24}</b><span>未来 24 小时的运行次数</span></div>
+      <div class="kpi wide"><b>${next ? new Date(next.occ[0]).toLocaleTimeString("zh-CN", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }) : "—"}</b><span>${next ? `下次运行： ${esc(next.s.title)}` : "未来 24 小时无运行"}</span></div>
     </div>
     <div class="agenda-grid">
-      <div class="arow header"><div class="atitle">任务 · agente · frequência</div><div class="anext">Próxima</div><div class="atrack scale">${hourMarks}<em style="left:0" title="agora (${startHour}h)"></em></div></div>
+      <div class="arow header"><div class="atitle">任务 · 智能体 · 频率</div><div class="anext">下次运行</div><div class="atrack scale">${hourMarks}<em style="left:0" title="现在 (${startHour})"></em></div></div>
       ${sorted.map(row).join("")}
     </div>
-    <p class="muted small">Horários de Brasília (Rio). Cada traço é uma execução prevista nas próximas 24 h.</p>`;
+    <p class="muted small">时间以里约当地时间显示。每条刻线代表未来 24 小时内的一次计划运行。</p>`;
 }
 
 // ---------- painel da tarefa ----------
@@ -184,24 +184,24 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((a) => `<option value="${a.id}" ${a.id === sel ? "selected" : ""}>${esc(a.emoji)} ${esc(a.name)} · ${esc(a.machine)}</option>`)
       .join("");
-  const CRON_HELP = `<small class="muted">Cron de 5 campos em horário do Rio. Ex.: <code>0 9 * * 1-5</code> (dias úteis 9h), <code>*/30 7-23 * * *</code> (a cada 30 min), <code>0 8 1 * *</code> (dia 1, 8h).</small>`;
+  const CRON_HELP = `<small class="muted">Cron 使用里约当地时间，共 5 个字段。例如 <code>0 9 * * 1-5</code>（工作日 9 点）、<code>*/30 7-23 * * *</code>（7 至 23 点，每 30 分钟一次）、<code>0 8 1 * *</code>（每月 1 日 8 点）。</small>`;
 
   function renderCreate() {
     el.hidden = false;
     el.innerHTML = `<button class="close" type="button" aria-label="关闭">✕</button>
-      <div class="eyebrow">⏰ 新建定时任务</div><h2>Criar 定时任务</h2>
+      <div class="eyebrow">⏰ 新建定时任务</div><h2>创建定时任务</h2>
       <form class="sched-form">
         <label>标题<input name="title" required maxlength="200" placeholder="例如：每周线索报告" /></label>
-        <label>智能体 responsável<select name="agentId" required>${agentOptions()}</select></label>
+        <label>负责的智能体<select name="agentId" required>${agentOptions()}</select></label>
         <label>智能体指令<textarea name="description" rows="7" required placeholder="描述每次运行要做的事"></textarea></label>
         <div class="grid2">
-          <label>Modo<select name="mode"><option value="create_issue">Criar uma issue por execução</option><option value="run_only">Só executar (sem issue)</option></select></label>
+          <label>模式<select name="mode"><option value="create_issue">每次运行创建一个任务</option><option value="run_only">仅运行（不创建任务）</option></select></label>
           <label>任务标题<input name="titleTemplate" placeholder="报告 {{date}}" /></label>
         </div>
         <label>运行时间（cron）<input name="cron" class="mono" placeholder="0 9 * * 1-5" /></label>
         <div class="cron-preview muted small"></div>
         ${CRON_HELP}
-        <button type="submit" class="primary wide">⏰ Criar 定时任务</button>
+        <button type="submit" class="primary wide">⏰ 创建定时任务</button>
       </form>`;
     el.querySelector(".close").onclick = onClose;
     const form = el.querySelector("form");
@@ -239,27 +239,27 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
               ${t.kind === "schedule"
                 ? `<input name="cron" class="mono" value="${esc(t.cron ?? "")}" /><span class="muted small">${esc(cronText(t.cron))}</span>`
                 : `<span>${esc(t.kind)}</span>`}
-              <label class="check inline"><input type="checkbox" name="enabled" ${t.enabled ? "checked" : ""}/> ativo</label>
+              <label class="check inline"><input type="checkbox" name="enabled" ${t.enabled ? "checked" : ""}/> 已启用</label>
               <button type="submit">保存</button><button type="button" class="danger" data-act="trig-del">删除</button></form>`)
             .join("")
-        : `<p class="muted">Sem horários: a tarefa só roda manualmente.</p>`
-      : `<p class="muted">正在加载 horários…</p>`;
+        : `<p class="muted">没有配置时间，只能手动运行。</p>`
+      : `<p class="muted">正在加载运行时间…</p>`;
     return `
       <form class="sched-form sched-edit">
         <label>标题<input name="title" required maxlength="200" value="${esc(s.title)}" /></label>
-        <label>智能体 responsável<select name="agentId">${agentOptions(s.agentId)}</select></label>
+        <label>负责的智能体<select name="agentId">${agentOptions(s.agentId)}</select></label>
         <label>智能体指令<textarea name="description" rows="8">${esc(detail?.description ?? "")}</textarea></label>
         <div class="grid2">
-          <label>Modo<select name="mode"><option value="create_issue" ${s.mode === "create_issue" ? "selected" : ""}>Criar uma issue por execução</option><option value="run_only" ${s.mode === "run_only" ? "selected" : ""}>Só executar (sem issue)</option></select></label>
+          <label>模式<select name="mode"><option value="create_issue" ${s.mode === "create_issue" ? "selected" : ""}>每次运行创建一个任务</option><option value="run_only" ${s.mode === "run_only" ? "selected" : ""}>仅运行（不创建任务）</option></select></label>
           <label>任务标题<input name="titleTemplate" value="${esc(detail?.titleTemplate ?? "")}" /></label>
         </div>
         <div class="row"><button type="button" data-act="cancel-edit">取消</button><button type="submit" class="primary">💾 保存</button></div>
       </form>
-      <div class="section-title">Horários</div>
+      <div class="section-title">运行时间</div>
       ${trig}
-      <form class="trig-add"><input name="cron" class="mono" placeholder="novo cron, ex.: 0 9 * * 1-5" required /><button type="submit">➕ 添加时间</button></form>
+      <form class="trig-add"><input name="cron" class="mono" placeholder="新 Cron 表达式，例如 0 9 * * 1-5" required /><button type="submit">➕ 添加时间</button></form>
       ${CRON_HELP}
-      <div class="section-title danger-title">Zona de risco</div>
+      <div class="section-title danger-title">危险操作</div>
       <button type="button" class="danger" data-act="delete">🗑️ 删除 定时任务</button>`;
   }
 
@@ -273,7 +273,7 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     const auth = getAuth();
     const trig = s.triggers.map((t) => (t.cron ? `<code>${esc(t.cron)}</code> ${esc(t.tz ?? "")}` : esc(t.kind))).join("<br>");
     let body;
-    if (!auth.enabled) body = `<p class="muted">历史 e ações estão desligados neste servidor.</p>`;
+    if (!auth.enabled) body = `<p class="muted">当前为只读模式，无法在此查看运行历史或执行操作。</p>`;
     else if (!auth.auth) body = `<button type="button" class="primary wide" data-act="login">🔐 登录查看运行历史和操作</button>`;
     else if (!detail) body = `<p class="muted">正在加载…</p>`;
     else if (detail.error) body = `<p class="error">${esc(detail.error)}</p>`;
@@ -281,34 +281,34 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     else
       body = `
         <div class="run-actions">
-          <button type="button" class="primary" data-act="trigger">▶ Rodar agora</button>
+          <button type="button" class="primary" data-act="trigger">▶ 立即运行</button>
           ${s.status === "active" ? `<button type="button" data-act="pause">⏸ 暂停</button>` : `<button type="button" data-act="resume">▶ 恢复</button>`}
           <button type="button" data-act="edit">✏️ 编辑</button>
         </div>
         ${detail.description ? `<div class="section-title">指令</div><div class="desc-box">${esc(detail.description)}</div>` : ""}
-        <div class="section-title">历史 de 次运行</div>
+        <div class="section-title">运行历史</div>
         ${detail.runs.length
           ? detail.runs
-              .map((r) => `<div class="run ${r.status === "failed" ? (r.acked ? "acked" : "failed") : ""}"><div class="run-top"><span class="pill">${RUN_STATUS[r.status] ?? esc(r.status)}${r.status === "failed" && r.acked ? " · 📦 arquivada" : ""}</span><small class="muted">${esc(when(r.at))} · ${esc(r.source)}</small></div>
+              .map((r) => `<div class="run ${r.status === "failed" ? (r.acked ? "acked" : "failed") : ""}"><div class="run-top"><span class="pill">${RUN_STATUS[r.status] ?? esc(r.status)}${r.status === "failed" && r.acked ? " · 📦 已归档" : ""}</span><small class="muted">${esc(when(r.at))} · ${esc(r.source)}</small></div>
                 ${r.issue ? `<div class="run-what"><b>${esc(r.issue.identifier)}</b> ${esc(r.issue.title)} <span class="muted small">(${esc(r.issue.status)})</span></div>` : ""}
                 ${r.failure ? `<div class="error small">${esc(r.failure)}</div>` : ""}
                 ${r.status === "failed" ? `<div class="run-actions">
-                  <button type="button" data-act="trigger">🔁 Rodar de novo</button>
-                  ${r.issue && !["done", "cancelled"].includes(r.issue.status) ? `<button type="button" class="primary" data-act="issue-done" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">✅ Concluir issue</button>
-                  <button type="button" class="danger" data-act="issue-cancel" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">🚫 取消 issue</button>` : ""}
-                  <button type="button" data-act="ack" data-run="${r.id}" data-ack="${r.acked ? "0" : "1"}">${r.acked ? "↩️ Desarquivar falha" : "📦 归档 falha"}</button>
+                  <button type="button" data-act="trigger">🔁 重新运行</button>
+                  ${r.issue && !["done", "cancelled"].includes(r.issue.status) ? `<button type="button" class="primary" data-act="issue-done" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">✅ 完成任务</button>
+                  <button type="button" class="danger" data-act="issue-cancel" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">🚫 取消任务</button>` : ""}
+                  <button type="button" data-act="ack" data-run="${r.id}" data-ack="${r.acked ? "0" : "1"}">${r.acked ? "↩️ 取消归档" : "📦 归档失败记录"}</button>
                 </div>` : ""}</div>`)
               .join("")
-          : `<p class="muted">Ainda não rodou.</p>`}`;
+          : `<p class="muted">尚未运行。</p>`}`;
     el.innerHTML = `<button class="close" type="button" aria-label="关闭">✕</button>
-      <div class="eyebrow">⏰ 任务 agendada</div>
+      <div class="eyebrow">⏰ 定时任务</div>
       <h2>${esc(s.title)}</h2>
-      <div class="meta"><span class="badge ${s.status}">${s.status === "active" ? "已启用" : "已暂停"}</span> · ${s.mode === "create_issue" ? "cria uma issue a cada execução" : "só executa (sem issue)"}</div>
+      <div class="meta"><span class="badge ${s.status}">${s.status === "active" ? "已启用" : "已暂停"}</span> · ${s.mode === "create_issue" ? "每次运行创建一个任务" : "仅运行（不创建任务）"}</div>
       <dl class="facts">
         <dt>负责人</dt><dd>${a ? `<a href="#" data-act="agent">${esc(a.emoji)} ${esc(a.name)}</a> <small class="muted">💻 ${esc(a.machine)}</small>` : "—"}</dd>
-        <dt>Frequência</dt><dd>${esc(cadence(s))}<br><small class="muted">${trig}</small></dd>
-        <dt>Próxima</dt><dd>${s.status === "active" ? esc(when(s.nextRunAt)) : "—"}</dd>
-        <dt>Última</dt><dd>${esc(when(s.lastRunAt))}${s.lastRun ? ` · ${RUN_STATUS[s.lastRun.status] ?? esc(s.lastRun.status)}` : ""}</dd>
+        <dt>频率</dt><dd>${esc(cadence(s))}<br><small class="muted">${trig}</small></dd>
+        <dt>下次运行</dt><dd>${s.status === "active" ? esc(when(s.nextRunAt)) : "—"}</dd>
+        <dt>上次运行</dt><dd>${esc(when(s.lastRunAt))}${s.lastRun ? ` · ${RUN_STATUS[s.lastRun.status] ?? esc(s.lastRun.status)}` : ""}</dd>
       </dl>
       ${body}`;
     el.querySelector(".close").onclick = onClose;
@@ -367,7 +367,7 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     }
     if (act === "ack") {
       const on = b.dataset.ack === "1";
-      if (await run(() => api("/api/acks", { id: b.dataset.run, ack: on }), on ? "Falha arquivada: saiu das 待处理事项s." : "Falha desarquivada.")) {
+      if (await run(() => api("/api/acks", { id: b.dataset.run, ack: on }), on ? "失败记录已归档。" : "已取消归档。")) {
         detail = null;
         render();
         load();
@@ -376,7 +376,7 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     }
     if (act === "issue-done" || act === "issue-cancel") {
       const status = act === "issue-done" ? "done" : "cancelled";
-      if (!confirm(`${status === "done" ? "Concluir" : "取消"} ${b.dataset.label}?`)) return;
+      if (!confirm(`${status === "done" ? "完成" : "取消"} ${b.dataset.label}?`)) return;
       if (await run(() => api(`/api/issues/${b.dataset.issue}/status`, { status }), `${b.dataset.label} ${status === "done" ? "已完成" : "已取消"}.`)) {
         detail = null;
         render();
@@ -386,22 +386,22 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     }
     if (act === "trig-del") {
       const tid = b.closest("form").dataset.trig;
-      if (!confirm("删除 este horário?")) return;
-      if (await run(() => api(`/api/schedules/${id}/triggers/${tid}/delete`, {}), "Horário excluído.")) loadTriggers();
+      if (!confirm("删除这个运行时间？")) return;
+      if (await run(() => api(`/api/schedules/${id}/triggers/${tid}/delete`, {}), "已删除运行时间。")) loadTriggers();
       return;
     }
     if (act === "delete") {
-      const typed = prompt(`删除 apaga a tarefa "${s.title}" e seus horários. Para confirmar, digite EXCLUIR:`);
-      if (typed !== "EXCLUIR") return typed !== null && toast("Confirmação não confere; nada foi excluído.", false);
-      if (await run(() => api(`/api/schedules/${id}/delete`, {}), "任务 agendada excluída.")) onClose();
+      const typed = prompt(`删除「${s.title}」及其运行时间。请输入「删除」确认。`);
+      if (typed !== "删除") return typed !== null && toast("确认文字不匹配，删除已取消。", false);
+      if (await run(() => api(`/api/schedules/${id}/delete`, {}), "定时任务已删除。")) onClose();
       return;
     }
-    const ask = { trigger: `Rodar "${s.title}" agora?`, pause: `暂停 "${s.title}"? Ela para de rodar até ser retomada.`, resume: `恢复 "${s.title}"?` }[act];
+    const ask = { trigger: `立即运行「${s.title}」？`, pause: `暂停「${s.title}」？恢复后才会继续运行。`, resume: `恢复「${s.title}」？` }[act];
     if (!ask || !confirm(ask)) return;
     b.disabled = true;
     const okRun = await run(
       () => (act === "trigger" ? api(`/api/schedules/${id}/trigger`, {}) : api(`/api/schedules/${id}/status`, { status: act === "pause" ? "paused" : "active" })),
-      act === "trigger" ? "Execução disparada; o agente vai começar." : act === "pause" ? "任务 已暂停." : "任务 retomada.",
+      act === "trigger" ? "已触发运行，智能体即将启动。" : act === "pause" ? "任务已暂停。" : "任务已恢复。",
     );
     if (okRun && act !== "trigger") s.status = act === "pause" ? "paused" : "active";
     detail = null;
@@ -422,8 +422,8 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
       if (v.mode.value !== s.mode) body.mode = v.mode.value;
       if (v.description.value !== (detail?.description ?? "")) body.description = v.description.value;
       if (v.titleTemplate.value !== (detail?.titleTemplate ?? "")) body.titleTemplate = v.titleTemplate.value;
-      if (!Object.keys(body).length) return toast("Nada mudou.");
-      if (await run(() => api(`/api/schedules/${id}/update`, body), "任务 atualizada.")) {
+      if (!Object.keys(body).length) return toast("没有更改。");
+      if (await run(() => api(`/api/schedules/${id}/update`, body), "任务已更新。")) {
         Object.assign(s, body.title ? { title: body.title } : {}, body.agentId ? { agentId: body.agentId } : {}, body.mode ? { mode: body.mode } : {});
         editing = false;
         detail = null;
@@ -433,9 +433,9 @@ export function createScheduleDrawer(el, { getData, getAuth, login, onClose, onA
     } else if (f.classList.contains("trig")) {
       const body = { enabled: f.elements.enabled.checked };
       if (f.elements.cron) body.cron = f.elements.cron.value.trim();
-      if (await run(() => api(`/api/schedules/${id}/triggers/${f.dataset.trig}`, { ...body, tz: TZ }), "Horário salvo.")) loadTriggers();
+      if (await run(() => api(`/api/schedules/${id}/triggers/${f.dataset.trig}`, { ...body, tz: TZ }), "运行时间已保存。")) loadTriggers();
     } else if (f.classList.contains("trig-add")) {
-      if (await run(() => api(`/api/schedules/${id}/triggers`, { cron: f.elements.cron.value.trim(), tz: TZ }), "Horário adicionado.")) loadTriggers();
+      if (await run(() => api(`/api/schedules/${id}/triggers`, { cron: f.elements.cron.value.trim(), tz: TZ }), "已添加运行时间。")) loadTriggers();
     }
   });
 

@@ -26,7 +26,7 @@ export function createMeetings({ multica, file, onStart = () => {}, onChange = (
     await writeFile(file, JSON.stringify({ meetings: list }, null, 1));
   }
 
-  const mention = (id, name) => `[@${String(name ?? "agente").replace(/[[\]]/g, "")}](mention://agent/${id})`;
+  const mention = (id, name) => `[@${String(name ?? "智能体").replace(/[[\]]/g, "")}](mention://agent/${id})`;
 
   /** Reuniões abertas (para o snapshot do escritório). */
   function active() {
@@ -65,7 +65,7 @@ export function createMeetings({ multica, file, onStart = () => {}, onChange = (
     if (!String(title ?? "").trim() || !String(prompt ?? "").trim()) throw Object.assign(new Error("Informe o assunto e a pauta."), { status: 400 });
     const [lead, ...rest] = people;
     // Na descrição, só os nomes: quem acorda os participantes é a menção no comentário (uma run por agente).
-    const roster = people.map((a, i) => `- **${String(a.name ?? "agente")}**${i === 0 ? " — coordena e consolida a resposta final" : ""}`).join("\n");
+    const roster = people.map((a, i) => `- **${String(a.name ?? "智能体")}**${i === 0 ? " — coordena e consolida a resposta final" : ""}`).join("\n");
     const body =
       `${String(prompt).trim()}\n\n## Reunião de agentes\n${roster}\n\n` +
       `**Como funciona:** cada participante contribui neste mesmo tópico com a sua especialidade (comentários curtos e objetivos, ` +
@@ -97,8 +97,8 @@ export function createMeetings({ multica, file, onStart = () => {}, onChange = (
 
   async function message(id, text, names, withTempFile) {
     const m = list.find((x) => x.id === id);
-    if (!m) throw Object.assign(new Error("Reunião não encontrada."), { status: 404 });
-    if (!String(text ?? "").trim()) throw Object.assign(new Error("Escreva a mensagem."), { status: 400 });
+    if (!m) throw Object.assign(new Error("找不到会议。"), { status: 404 });
+    if (!String(text ?? "").trim()) throw Object.assign(new Error("请输入消息。"), { status: 400 });
     const tags = m.agents.map((a) => mention(a, names?.[a])).join(" ");
     await withTempFile(`${tags} ${String(text).trim()}${FOOTER}`, (f) =>
       multica(["issue", "comment", "add", m.id, "--content-file", f, "--allow-external-file"]),
@@ -114,7 +114,7 @@ export function createMeetings({ multica, file, onStart = () => {}, onChange = (
 
   async function end(id) {
     const m = list.find((x) => x.id === id);
-    if (!m) throw Object.assign(new Error("Reunião não encontrada."), { status: 404 });
+    if (!m) throw Object.assign(new Error("找不到会议。"), { status: 404 });
     await multica(["issue", "status", m.id, "done"]).catch(() => {});
     m.status = "done";
     await save();
@@ -130,7 +130,7 @@ export function createMeetings({ multica, file, onStart = () => {}, onChange = (
       return send(res, 200, { meeting: m }), true;
     }
     if ((mm = /^\/api\/meetings\/([^/]+)\/(message|end)$/.exec(path)) && req.method === "POST") {
-      if (!ID.test(mm[1])) return send(res, 400, { error: "id inválido" }), true;
+      if (!ID.test(mm[1])) return send(res, 400, { error: "无效的 ID" }), true;
       if (mm[2] === "end") await end(mm[1]);
       else {
         const { text, names } = await readJson(req);

@@ -183,6 +183,6 @@ export function createDemoCli() {
         })),
       };
     }
-    throw Object.assign(new Error("Modo demonstração: ações que alteram dados estão desligadas."), { status: 403, stderr: "" });
+    throw Object.assign(new Error("演示模式下不能修改数据。"), { status: 403, stderr: "" });
   };
 }

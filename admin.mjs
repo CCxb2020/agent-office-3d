@@ -7,7 +7,8 @@
 
 const ID = /^[0-9a-f-]{8,40}$/i;
 const THINKING = new Set(["", "off", "minimal", "low", "medium", "high", "xhigh", "max"]);
-const CHAT_TITLE = "💬 Conversa pelo painel";
+const CHAT_TITLE = "💬 办公室对话";
+const LEGACY_CHAT_TITLE = "💬 Conversa pelo painel";
 const FOOTER = "\n\n---\n_Enviado pelo painel Escritório de Agentes._";
 
 export function createAdmin({ multica, clean, readJson, send, withTempFile, issueSummary, onChange, onStart = () => {}, acks, looks }) {
@@ -56,7 +57,7 @@ export function createAdmin({ multica, clean, readJson, send, withTempFile, issu
     const str = (k, flag, max) => {
       if (body[k] === undefined) return;
       const v = String(body[k]);
-      if (v.length > max) throw Object.assign(new Error(`${k} grande demais`), { status: 400 });
+      if (v.length > max) throw Object.assign(new Error(`${k} 超过长度限制`), { status: 400 });
       args.push(flag, v);
     };
     str("name", "--name", 120);
@@ -64,22 +65,22 @@ export function createAdmin({ multica, clean, readJson, send, withTempFile, issu
     str("instructions", "--instructions", 120_000);
     str("model", "--model", 120);
     if (body.thinkingLevel !== undefined) {
-      if (!THINKING.has(body.thinkingLevel)) throw Object.assign(new Error("nível de raciocínio inválido"), { status: 400 });
+      if (!THINKING.has(body.thinkingLevel)) throw Object.assign(new Error("无效的推理强度"), { status: 400 });
       args.push("--thinking-level", body.thinkingLevel);
     }
     if (body.maxConcurrent !== undefined) {
       const n = Number(body.maxConcurrent);
-      if (!Number.isInteger(n) || n < 1 || n > 50) throw Object.assign(new Error("concorrência deve ser de 1 a 50"), { status: 400 });
+      if (!Number.isInteger(n) || n < 1 || n > 50) throw Object.assign(new Error("同时运行数必须在 1 到 50 之间"), { status: 400 });
       args.push("--max-concurrent-tasks", String(n));
     }
     if (body.runtimeId !== undefined) {
-      if (!ID.test(body.runtimeId)) throw Object.assign(new Error("runtime inválido"), { status: 400 });
+      if (!ID.test(body.runtimeId)) throw Object.assign(new Error("无效的运行时"), { status: 400 });
       args.push("--runtime-id", body.runtimeId);
     }
     if (body.permission !== undefined) {
       if (body.permission === "workspace") args.push("--permission-mode", "public_to", "--public-to-workspace");
       else if (body.permission === "private") args.push("--permission-mode", "private");
-      else throw Object.assign(new Error("permissão inválida"), { status: 400 });
+      else throw Object.assign(new Error("无效的权限"), { status: 400 });
     }
     if (args.length === 3) throw Object.assign(new Error("nada para salvar"), { status: 400 });
     await multica(args);
@@ -90,7 +91,7 @@ export function createAdmin({ multica, clean, readJson, send, withTempFile, issu
   async function conversationIssue(agentId) {
     const res = await multica(["issue", "list", "--assignee-id", agentId, "--limit", "50", "--sort", "created_at", "--direction", "desc",
       "--fields", "id,identifier,title,status"]);
-    return (res.issues ?? []).find((i) => i.title.startsWith(CHAT_TITLE) && i.status !== "cancelled") ?? null;
+    return (res.issues ?? []).find((i) => [CHAT_TITLE, LEGACY_CHAT_TITLE].some((prefix) => i.title.startsWith(prefix)) && i.status !== "cancelled") ?? null;
   }
 
   async function conversation(agentId) {
@@ -155,10 +156,10 @@ export function createAdmin({ multica, clean, readJson, send, withTempFile, issu
   }
 
   async function createSchedule(b) {
-    if (!String(b.title ?? "").trim()) throw Object.assign(new Error("Informe o título."), { status: 400 });
+    if (!String(b.title ?? "").trim()) throw Object.assign(new Error("请输入标题。"), { status: 400 });
     if (!ID.test(b.agentId ?? "")) throw Object.assign(new Error("Escolha o agente."), { status: 400 });
-    if (!["create_issue", "run_only"].includes(b.mode)) throw Object.assign(new Error("Modo inválido."), { status: 400 });
-    if (b.cron && !cronOk(b.cron)) throw Object.assign(new Error("Cron inválido (use 5 campos, ex.: 0 9 * * 1-5)."), { status: 400 });
+    if (!["create_issue", "run_only"].includes(b.mode)) throw Object.assign(new Error("无效的模式。"), { status: 400 });
+    if (b.cron && !cronOk(b.cron)) throw Object.assign(new Error("Cron 表达式需要 5 个字段，例如 0 9 * * 1-5。"), { status: 400 });
     const args = ["autopilot", "create", "--title", String(b.title).slice(0, 200), "--agent", b.agentId, "--mode", b.mode,
       "--description", String(b.description ?? "").slice(0, 20000)];
     if (b.mode === "create_issue" && b.titleTemplate) args.push("--issue-title-template", String(b.titleTemplate).slice(0, 200));
@@ -173,11 +174,11 @@ export function createAdmin({ multica, clean, readJson, send, withTempFile, issu
     if (b.title !== undefined) args.push("--title", String(b.title).slice(0, 200));
     if (b.description !== undefined) args.push("--description", String(b.description).slice(0, 20000));
     if (b.agentId !== undefined) {
-      if (!ID.test(b.agentId)) throw Object.assign(new Error("agente inválido"), { status: 400 });
+      if (!ID.test(b.agentId)) throw Object.assign(new Error("无效的智能体"), { status: 400 });
       args.push("--agent", b.agentId);
     }
     if (b.mode !== undefined) {
-      if (!["create_issue", "run_only"].includes(b.mode)) throw Object.assign(new Error("modo inválido"), { status: 400 });
+      if (!["create_issue", "run_only"].includes(b.mode)) throw Object.assign(new Error("无效的模式"), { status: 400 });
       args.push("--mode", b.mode);
     }
     if (b.titleTemplate !== undefined) args.push("--issue-title-template", String(b.titleTemplate).slice(0, 200));
@@ -190,30 +191,30 @@ export function createAdmin({ multica, clean, readJson, send, withTempFile, issu
     const POST = req.method === "POST";
 
     if ((m = /^\/api\/agents\/([^/]+)\/details$/.exec(path)) && !POST) {
-      if (!ID.test(m[1])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1])) return bad(res, "无效的 ID"), true;
       return ok(res, await details(m[1])), true;
     }
     if ((m = /^\/api\/agents\/([^/]+)\/update$/.exec(path)) && POST) {
-      if (!ID.test(m[1])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1])) return bad(res, "无效的 ID"), true;
       await updateAgent(m[1], await readJson(req));
       await changed();
       return ok(res), true;
     }
     if ((m = /^\/api\/agents\/([^/]+)\/skills$/.exec(path)) && POST) {
       const { skillIds } = await readJson(req);
-      if (!ID.test(m[1]) || !Array.isArray(skillIds) || !skillIds.every((s) => ID.test(s))) return bad(res, "skills inválidas"), true;
+      if (!ID.test(m[1]) || !Array.isArray(skillIds) || !skillIds.every((s) => ID.test(s))) return bad(res, "无效的技能"), true;
       await multica(["agent", "skills", "set", m[1], "--skill-ids", skillIds.join(",")]);
       return ok(res), true;
     }
     if ((m = /^\/api\/agents\/([^/]+)\/(archive|restore)$/.exec(path)) && POST) {
-      if (!ID.test(m[1])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1])) return bad(res, "无效的 ID"), true;
       await multica(["agent", m[2], m[1]]);
       await changed();
       return ok(res), true;
     }
     if ((m = /^\/api\/agents\/([^/]+)\/copy$/.exec(path)) && POST) {
       const { name, runtimeId } = await readJson(req);
-      if (!ID.test(m[1]) || (runtimeId && !ID.test(runtimeId))) return bad(res, "dados inválidos"), true;
+      if (!ID.test(m[1]) || (runtimeId && !ID.test(runtimeId))) return bad(res, "无效的数据"), true;
       const args = ["agent", "copy", m[1]];
       if (name) args.push("--name", String(name).slice(0, 120));
       if (runtimeId) args.push("--runtime-id", runtimeId, "--model", "");
@@ -222,28 +223,28 @@ export function createAdmin({ multica, clean, readJson, send, withTempFile, issu
       return ok(res, { id: copy.id, name: copy.name }), true;
     }
     if ((m = /^\/api\/agents\/([^/]+)\/conversation$/.exec(path))) {
-      if (!ID.test(m[1])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1])) return bad(res, "无效的 ID"), true;
       if (!POST) return ok(res, await conversation(m[1])), true;
       const { text, agentName } = await readJson(req);
-      if (!String(text ?? "").trim()) return bad(res, "Escreva a mensagem."), true;
-      const issue = await sendMessage(m[1], agentName ?? "agente", String(text).slice(0, 20000));
-      onStart(m[1], "💬 Conversa pelo painel");
+      if (!String(text ?? "").trim()) return bad(res, "请输入消息。"), true;
+      const issue = await sendMessage(m[1], agentName ?? "智能体", String(text).slice(0, 20000));
+      onStart(m[1], CHAT_TITLE);
       return ok(res, { issue }), true;
     }
     if ((m = /^\/api\/agents\/([^/]+)\/chats$/.exec(path)) && !POST) {
-      if (!ID.test(m[1])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1])) return bad(res, "无效的 ID"), true;
       return ok(res, await chats(m[1])), true;
     }
 
     // Visual do agente no escritório (uniforme, pele, cabelo).
     if ((m = /^\/api\/agents\/([^/]+)\/look$/.exec(path)) && POST) {
-      if (!ID.test(m[1])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1])) return bad(res, "无效的 ID"), true;
       const b = await readJson(req);
       const OUT = ["liso", "hotel", "social", "terno", "recepcao", "chef", "esporte", "verao", "flamengo"];
       const color = (v) => (Number.isInteger(v) && v >= 0 && v <= 0xffffff ? v : undefined);
       if (b.reset) await looks.set(m[1], null);
       else {
-        if (!OUT.includes(b.outfit)) return bad(res, "uniforme inválido"), true;
+        if (!OUT.includes(b.outfit)) return bad(res, "无效的服装"), true;
         await looks.set(m[1], { outfit: b.outfit, skin: color(b.skin), hair: color(b.hair) });
       }
       await changed();
@@ -253,7 +254,7 @@ export function createAdmin({ multica, clean, readJson, send, withTempFile, issu
     // Arquivar (ou desarquivar) uma falha: tira a pendência do painel.
     if (path === "/api/acks" && POST) {
       const { id, ack } = await readJson(req);
-      if (!ID.test(id ?? "")) return bad(res, "id inválido"), true;
+      if (!ID.test(id ?? "")) return bad(res, "无效的 ID"), true;
       await acks.set(id, ack !== false);
       await changed();
       return ok(res), true;
@@ -265,34 +266,34 @@ export function createAdmin({ multica, clean, readJson, send, withTempFile, issu
       return ok(res, out), true;
     }
     if ((m = /^\/api\/schedules\/([^/]+)\/update$/.exec(path)) && POST) {
-      if (!ID.test(m[1])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1])) return bad(res, "无效的 ID"), true;
       await updateSchedule(m[1], await readJson(req));
       await changed();
       return ok(res), true;
     }
     if ((m = /^\/api\/schedules\/([^/]+)\/delete$/.exec(path)) && POST) {
-      if (!ID.test(m[1])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1])) return bad(res, "无效的 ID"), true;
       await multica(["autopilot", "delete", m[1]], { json: false });
       await changed();
       return ok(res), true;
     }
     if ((m = /^\/api\/schedules\/([^/]+)\/triggers$/.exec(path))) {
-      if (!ID.test(m[1])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1])) return bad(res, "无效的 ID"), true;
       if (!POST) return ok(res, { triggers: await scheduleTriggers(m[1]) }), true;
       const { cron, tz } = await readJson(req);
-      if (!cronOk(cron)) return bad(res, "Cron inválido (5 campos, ex.: 0 9 * * 1-5)."), true;
+      if (!cronOk(cron)) return bad(res, "Cron 表达式需要 5 个字段，例如 0 9 * * 1-5。"), true;
       await multica(["autopilot", "trigger-add", m[1], "--kind", "schedule", "--cron", cron.trim(), "--timezone", tz || "America/Sao_Paulo"]);
       await changed();
       return ok(res), true;
     }
     if ((m = /^\/api\/schedules\/([^/]+)\/triggers\/([^/]+)(\/delete)?$/.exec(path)) && POST) {
-      if (!ID.test(m[1]) || !ID.test(m[2])) return bad(res, "id inválido"), true;
+      if (!ID.test(m[1]) || !ID.test(m[2])) return bad(res, "无效的 ID"), true;
       if (m[3]) await multica(["autopilot", "trigger-delete", m[1], m[2]], { json: false });
       else {
         const { cron, tz, enabled } = await readJson(req);
         const args = ["autopilot", "trigger-update", m[1], m[2]];
         if (cron !== undefined) {
-          if (!cronOk(cron)) return bad(res, "Cron inválido."), true;
+          if (!cronOk(cron)) return bad(res, "Cron 表达式无效。"), true;
           args.push("--cron", cron.trim());
         }
         if (tz) args.push("--timezone", tz);

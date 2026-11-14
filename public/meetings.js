@@ -49,7 +49,7 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
 
   const agents = () => (getData()?.agents ?? []).slice().sort((a, b) => a.name.localeCompare(b.name));
   const byId = (id) => getData()?.agents.find((a) => a.id === id);
-  const names = (ids) => Object.fromEntries(ids.map((id) => [id, byId(id)?.name ?? "agente"]));
+  const names = (ids) => Object.fromEntries(ids.map((id) => [id, byId(id)?.name ?? "智能体"]));
 
   function open(opts = {}) {
     if (!getAuth().auth) return login();
@@ -68,25 +68,25 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
     const pair = picked.length === 2 && opts.pair;
     dlg.innerHTML = `
       <form method="dialog" class="meet-form">
-        <header><h2>${opts.pair ? "🗣️ Conversa entre agentes" : "🤝 Nova reunião de agentes"}</h2>
-          <button type="button" class="ghost" data-x="list">📋 会议 待处理 (${(getData()?.meetings ?? []).length})</button>
+        <header><h2>${opts.pair ? "🗣️ 智能体对话" : "🤝 新建智能体会议"}</h2>
+          <button type="button" class="ghost" data-x="list">📋 进行中的会议 (${(getData()?.meetings ?? []).length})</button>
           <button type="button" class="close" data-x="close" aria-label="关闭">✕</button></header>
         <label>主题<input name="title" maxlength="120" required placeholder="例如：夏季推广活动" value="${esc(title)}" /></label>
         <label>会议议题<textarea name="prompt" rows="4" required placeholder="描述任务。成员按专长分工，由协调人汇总。">${esc(prompt)}</textarea></label>
         <div class="meet-pick-head">
-          <b>Participantes <small>(${picked.length}/10 · o 1º coordena)</small></b>
-          <button type="button" data-x="suggest" title="Sugere agentes pelas palavras do assunto e da pauta">✨ Sugerir pela pauta</button>
+          <b>参会者 <small>(${picked.length}/10 · 首位负责协调)</small></b>
+          <button type="button" data-x="suggest" title="根据主题和议题推荐智能体">✨ 按议题推荐</button>
         </div>
         <div class="meet-chosen">${picked.length ? picked.map((id, i) => {
           const a = byId(id);
           return `<span class="chip-ag ${i === 0 ? "lead" : ""}">${i === 0 ? "👑 " : ""}${esc(a?.emoji ?? "")} ${esc(a?.name ?? id)}
-            ${i ? `<button type="button" data-lead="${id}" title="Tornar coordenador">👑</button>` : ""}<button type="button" data-rm="${id}" title="Tirar">✕</button></span>`;
-        }).join("") : `<small class="muted">Clique nos agentes abaixo (ou use ✨ Sugerir).</small>`}</div>
-        <input class="meet-search" placeholder="🔎 搜索 agente…" value="${esc(filterText)}" />
+            ${i ? `<button type="button" data-lead="${id}" title="设为协调人">👑</button>` : ""}<button type="button" data-rm="${id}" title="移除">✕</button></span>`;
+        }).join("") : `<small class="muted">点击下方智能体，或使用推荐功能。</small>`}</div>
+        <input class="meet-search" placeholder="🔎 搜索智能体…" value="${esc(filterText)}" />
         <ul class="meet-list">${listItems()}</ul>
         <footer>
-          <small class="muted">${pair ? "Os dois conversam no mesmo tópico; o primeiro coordena." : "Cria uma issue com a pauta para o coordenador e chama os demais por menção, no mesmo tópico."}</small>
-          <button type="submit" class="primary" ${picked.length < 2 ? "disabled" : ""}>🤝 Iniciar ${opts.pair ? "conversa" : "reunião"}</button>
+          <small class="muted">${pair ? "两位智能体讨论同一主题，由首位协调。" : "将议题建成任务交给协调人，并在同一任务中提及其他成员。"}</small>
+          <button type="submit" class="primary" ${picked.length < 2 ? "disabled" : ""}>🤝 ${opts.pair ? "开始对话" : "开始会议"}</button>
         </footer>
       </form>`;
     dlg.querySelector(".meet-search").oninput = (e) => {
@@ -106,7 +106,7 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
       .filter((a) => !q || norm(a.name).includes(q) || norm(a.description).includes(q))
       .map((a) => `<li class="${picked.includes(a.id) ? "on" : ""} ${a.state}" data-pick="${a.id}">
         <span class="dot ${a.state}"></span><span class="em">${esc(a.emoji)}</span>
-        <span class="nm">${esc(a.name)}<small>${esc(a.machine)} · ${esc(a.provider)}${a.state === "working" ? " · trabalhando" : a.state === "offline" ? " · desligado" : ""}</small></span>
+        <span class="nm">${esc(a.name)}<small>${esc(a.machine)} · ${esc(a.provider)}${a.state === "working" ? " · 工作中" : a.state === "offline" ? " · 离线" : ""}</small></span>
         <span class="ck">${picked.includes(a.id) ? "✓" : "+"}</span></li>`)
       .join("");
   }
@@ -115,8 +115,8 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
     const list = getData()?.meetings ?? [];
     dlg.innerHTML = `
       <div class="meet-form">
-        <header><h2>📋 会议 待处理</h2>
-          <button type="button" class="ghost" data-x="new">🤝 Nova reunião</button>
+        <header><h2>📋 进行中的会议</h2>
+          <button type="button" class="ghost" data-x="new">🤝 新建会议</button>
           <button type="button" class="close" data-x="close" aria-label="关闭">✕</button></header>
         ${list.length ? list.map((m) => `
           <div class="meet-card">
@@ -127,8 +127,8 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
             }).join("")}</div>
             <div class="meet-msg"><input placeholder="给所有参会者发送消息…" data-msg="${m.id}" />
               <button type="button" data-send="${m.id}">📨 发送</button>
-              <button type="button" class="primary" data-end="${m.id}">✅ Encerrar</button></div>
-          </div>`).join("") : `<p class="muted">Nenhuma reunião aberta. Crie uma em “🤝 Nova reunião”.</p>`}
+              <button type="button" class="primary" data-end="${m.id}">✅ 结束</button></div>
+          </div>`).join("") : `<p class="muted">当前没有会议。点击「新建会议」开始。</p>`}
       </div>`;
   }
 
@@ -138,16 +138,16 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
     if (picked.length < 2 || !title || !prompt) return toast("填写主题和议题，并选择至少两位智能体。", false);
     const btn = dlg.querySelector("button[type=submit]");
     btn.disabled = true;
-    btn.textContent = "⏳ Chamando os agentes…";
+    btn.textContent = "⏳ 正在召集智能体…";
     try {
       const { meeting } = await api("/api/meetings", { title, prompt, agents: picked.map((id) => ({ id, name: byId(id)?.name })) });
-      toast(`${meeting.identifier ?? "会议"} criada: ${picked.length} agentes a caminho da sala de reunião.`);
+      toast(`${meeting.identifier ?? "会议"} 已创建，${picked.length} 位智能体正在前往会议室。`);
       dlg.close();
       onChanged();
     } catch (e) {
       toast(`操作失败： ${e.message}`, false);
       btn.disabled = false;
-      btn.textContent = opts.pair ? "🤝 Iniciar conversa" : "🤝 Iniciar reunião";
+      btn.textContent = opts.pair ? "🤝 开始对话" : "🤝 开始会议";
     }
   }
 
@@ -164,9 +164,9 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
     if (d.x === "suggest") {
       const text = `${dlg.querySelector("[name=title]").value} ${dlg.querySelector("[name=prompt]").value}`;
       const sug = suggestAgents(agents().filter((a) => !picked.includes(a.id)), text, Math.max(0, Math.min(4, 10 - picked.length)));
-      if (!sug.length) return toast("Nenhum agente combina com essas palavras. Escreva mais sobre a pauta ou escolha manualmente.", false);
+      if (!sug.length) return toast("没有找到匹配的智能体。请补充议题或手动选择。", false);
       picked.push(...sug.map((a) => a.id));
-      toast(`Sugeridos: ${sug.map((a) => a.name).join(", ")}`);
+      toast(`推荐： ${sug.map((a) => a.name).join(", ")}`);
       return render({ pair: dlg.dataset.pair === "1" });
     }
     if (d.pick) {
@@ -195,7 +195,7 @@ export function createMeetings({ getData, getAuth, login, toast, onChanged, onAg
       return;
     }
     if (d.end) {
-      if (!confirm("Encerrar a reunião? A issue vai para 已完成 e os agentes voltam aos seus lugares.")) return;
+      if (!confirm("结束会议？任务将标为已完成，智能体会返回各自的位置。")) return;
       try {
         await api(`/api/meetings/${d.end}/end`, {});
         toast("会议已结束。");

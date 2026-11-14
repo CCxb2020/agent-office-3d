@@ -86,7 +86,7 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
       ["runs", "⏱️ 运行记录"],
       ["chats", "💬 Chats"],
       ["schedules", "⏰ 定时任务"],
-      ["issues", "📋 Issues"],
+      ["issues", "📋 任务"],
     ];
     const chips =
       tab === "issues"
@@ -96,15 +96,15 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
       <div class="h-top">
         <div class="h-tabs">${tabs.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div>
         <input class="h-search" placeholder="${tab === "issues" ? "🔎 筛选…（回车可搜索描述和评论）" : "🔎 按智能体、任务或标题筛选…"}" value="${esc(q)}" />
-        <button type="button" data-h="reload" title="Ler de novo do Multica">↻ 刷新</button>
+        <button type="button" data-h="reload" title="从 Multica 重新读取">↻ 刷新</button>
       </div>
       ${summary(items)}
       <div class="h-chips">${chips.map(([k, l]) => `<button type="button" data-f="${k}" aria-pressed="${filter === k}">${l}</button>`).join("")}
-        ${loaded[source(tab)]?.at ? `<small class="muted">lido às ${hm(loaded[source(tab)].at)} · clique numa linha para gerenciar</small>` : ""}</div>
-      ${tab === "issues" && selected.size ? `<div class="h-bulk"><b>${selected.size} selecionada${selected.size > 1 ? "s" : ""}</b>
+        ${loaded[source(tab)]?.at ? `<small class="muted">读取于 ${hm(loaded[source(tab)].at)} · 点击条目查看详情</small>` : ""}</div>
+      ${tab === "issues" && selected.size ? `<div class="h-bulk"><b>已选 ${selected.size} 项</b>
         <select class="h-bulk-status">${Object.entries(ISSUE_ST).map(([k, [l]]) => `<option value="${k}" ${k === "done" ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
         <button type="button" class="primary" data-h="bulk">应用状态</button><button type="button" data-h="unselect">清空选择</button></div>` : ""}
-      ${found ? `<div class="h-found">🔎 ${found.loading ? "搜索中" : `${found.items.length} resultado${found.items.length === 1 ? "" : "s"}`} para “${esc(found.q)}” em títulos, descrições e comentários <button type="button" data-h="unfind">✕ limpar</button></div>` : ""}`;
+      ${found ? `<div class="h-found">🔎 ${found.loading ? "搜索中" : `${found.items.length} 条结果`}  · 搜索标题、描述和评论中的「${esc(found.q)}」 <button type="button" data-h="unfind">✕ 清除</button></div>` : ""}`;
   }
 
   /** Cartões de resumo (últimas 24 h) e alerta de falta de créditos. */
@@ -125,8 +125,8 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
     const live = items.filter((r) => RUN_ST[r.status]?.[1] === "live").length;
     const rate = ok + bad ? Math.round((ok / (ok + bad)) * 100) : null;
     const credits = items.slice(0, 40).some((r) => /out of credits|sem cr[eé]dito/i.test(r.failure ?? r.error ?? ""));
-    return `${credits ? `<div class="h-alert">⚠️ 运行记录 recentes 失败 com <b>“workspace is out of credits”</b>: o workspace do Multica está sem créditos. Peça ao dono do workspace para recarregar — até lá, tarefas e agendadas não rodam.</div>` : ""}
-      <div class="h-cards">${card("▶️", day.length, "execuções em 24 h")}${card("✅", ok, "已完成")}${card("❌", bad, "失败", bad ? "bad" : "")}${card("📈", rate == null ? "—" : `${rate}%`, "成功率")}${card("⏳", live, "rodando agora")}</div>`;
+    return `${credits ? `<div class="h-alert">⚠️ Multica 工作区额度不足，近期运行失败。请联系工作区所有者补充额度。</div>` : ""}
+      <div class="h-cards">${card("▶️", day.length, "过去 24 小时的运行次数")}${card("✅", ok, "已完成")}${card("❌", bad, "失败", bad ? "bad" : "")}${card("📈", rate == null ? "—" : `${rate}%`, "成功率")}${card("⏳", live, "正在运行")}</div>`;
   }
   const card = (icon, n, label, cls = "") => `<div class="h-card ${cls}"><span>${icon}</span><b>${n}</b><small>${label}</small></div>`;
 
@@ -146,7 +146,7 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
           html: `<div class="h-row clickable" data-st="${cls}" ${r.issueId ? `data-open-issue="${esc(r.issueId)}"` : `data-open-run="${esc(r.id)}"`}>
             <span class="h-time">${hm(r.createdAt)}</span>
             <span class="h-st ${cls}" title="${esc(label)}">${ic} ${esc(label)}</span>
-            <span class="h-what">${what}<small>${esc(KIND[r.kind] ?? r.kind ?? "")}${r.by ? ` · por ${esc(r.by)}` : ""}${r.completedAt ? ` · ${dur(r.startedAt ?? r.createdAt, r.completedAt)}` : ""}</small>
+            <span class="h-what">${what}<small>${esc(KIND[r.kind] ?? r.kind ?? "")}${r.by ? ` · 发起人：${ esc(r.by)}` : ""}${r.completedAt ? ` · ${dur(r.startedAt ?? r.createdAt, r.completedAt)}` : ""}</small>
               ${r.error ? `<small class="h-err">${esc(r.error)}</small>` : ""}</span>
             ${who(r.agentId)}
           </div>`,
@@ -183,10 +183,10 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
         return {
           at: i.activityAt,
           html: `<div class="h-row clickable ${selected.has(i.id) ? "sel" : ""}" data-open-issue="${esc(i.id)}">
-            <span class="h-time"><input type="checkbox" class="h-sel" data-sel="${esc(i.id)}" ${selected.has(i.id) ? "checked" : ""} aria-label="Selecionar ${esc(i.identifier)}" /> ${hm(i.activityAt)}</span>
+            <span class="h-time"><input type="checkbox" class="h-sel" data-sel="${esc(i.id)}" ${selected.has(i.id) ? "checked" : ""} aria-label="选择 ${esc(i.identifier)}" /> ${hm(i.activityAt)}</span>
             <span class="h-st ${cls}">${esc(label)}</span>
-            <span class="h-what"><b>${esc(i.identifier)}</b> ${esc(i.title)}<small>${i.createdAt ? `criada ${esc(dayKey(i.createdAt))} ${hm(i.createdAt)}` : ""}${i.match ? ` · achada no ${i.match === "comment" ? "comentário" : i.match === "description" ? "descrição" : "título"}` : ""}</small></span>
-            ${i.assignee ? who(i.assignee) : `<span class="muted">${i.assigneeType === "member" ? "👤 membro" : "—"}</span>`}
+            <span class="h-what"><b>${esc(i.identifier)}</b> ${esc(i.title)}<small>${i.createdAt ? `创建于 ${esc(dayKey(i.createdAt))} ${hm(i.createdAt)}` : ""}${i.match ? ` · 匹配于${i.match === "comment" ? "评论" : i.match === "description" ? "描述" : "标题"}` : ""}</small></span>
+            ${i.assignee ? who(i.assignee) : `<span class="muted">${i.assigneeType === "member" ? "👤 成员" : "—"}</span>`}
           </div>`,
         };
       });
@@ -200,7 +200,7 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
     else if (st?.error) body = `<p class="error">读取失败: ${esc(st.error)}</p>`;
     else {
       const rows = tab === "runs" || tab === "chats" ? rowsRuns(items) : tab === "schedules" ? rowsSchedules(items) : rowsIssues(items);
-      if (!rows.length) body = `<p class="muted">Nada encontrado com esse filtro.</p>`;
+      if (!rows.length) body = `<p class="muted">没有符合筛选条件的记录。</p>`;
       else {
         // Agrupa por dia: Hoje, Ontem, …
         let last = "";
@@ -216,8 +216,8 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
       }
     }
     const more = tab === "issues" && !found && loaded.issues?.more
-      ? `<button type="button" class="wide" data-h="more">⬇️ Carregar mais 200 issues antigas (agora ${items.length})</button>` : "";
-    el.innerHTML = `<div class="h-wrap">${head(items)}${loading && st ? `<p class="muted">⏳ Atualizando…</p>` : ""}<div class="h-list">${body}</div>${more}</div>`;
+      ? `<button type="button" class="wide" data-h="more">⬇️ 加载更早的 200 项任务（当前 ${items.length} 项）</button>` : "";
+    el.innerHTML = `<div class="h-wrap">${head(items)}${loading && st ? `<p class="muted">⏳ 正在刷新…</p>` : ""}<div class="h-list">${body}</div>${more}</div>`;
   }
 
   el.addEventListener("click", async (e) => {
@@ -247,11 +247,11 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
     if (b.dataset.h === "unfind") return (found = null), render();
     if (b.dataset.h === "bulk") {
       const status = el.querySelector(".h-bulk-status").value;
-      if (!confirm(`Mudar ${selected.size} issue(s) para “${ISSUE_ST[status][0]}”?`)) return;
+      if (!confirm(`将 ${selected.size} 项任务改为「${ISSUE_ST[status][0]}」？`)) return;
       b.disabled = true;
       try {
         const r = await api("/api/manage/bulk-status", { ids: [...selected], status });
-        toast(`${r.ok.length} atualizada(s)${r.failed.length ? `, ${r.failed.length} 失败` : ""}.`, !r.failed.length);
+        toast(`${r.ok.length} 项已更新${r.failed.length ? `, ${r.failed.length} 失败` : ""}.`, !r.failed.length);
         selected.clear();
         found = null;
       } catch (err) {
@@ -296,7 +296,7 @@ export function createHistory(el, { getData, getAuth, login, onAgent, onSchedule
       found = { q: text, items: (await api(`/api/manage/search?q=${encodeURIComponent(text)}`)).issues };
     } catch (err) {
       found = null;
-      toast(`Busca 失败: ${err.message}`, false);
+      toast(`搜索失败: ${err.message}`, false);
     }
     render();
   });

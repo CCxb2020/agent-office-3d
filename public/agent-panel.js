@@ -7,8 +7,8 @@ const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 const RUN_STATUS = {
-  running: "▶️ rodando",
-  dispatched: "📤 enviada",
+  running: "▶️ 运行中",
+  dispatched: "📤 已派发",
   queued: "⏳ 排队中",
   completed: "✅ 已完成",
   failed: "❌ 失败",
@@ -28,10 +28,10 @@ const STATE_LABEL = { working: "工作中", blocked: "受阻", idle: "空闲", o
 function ago(iso) {
   if (!iso) return "";
   const min = Math.round((Date.now() - new Date(iso)) / 60000);
-  if (min < 1) return "agora";
-  if (min < 60) return `há ${min} min`;
-  if (min < 48 * 60) return `há ${Math.round(min / 60)} h`;
-  return `há ${Math.round(min / 1440)} d`;
+  if (min < 1) return "现在";
+  if (min < 60) return `${min} 分钟前`;
+  if (min < 48 * 60) return `${Math.round(min / 60)} 小时前`;
+  return `${Math.round(min / 1440)} 天前`;
 }
 function duration(a, b) {
   if (!a) return "";
@@ -69,8 +69,8 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     if (!b) return;
     if (handleFailAction(b)) return;
     if (b.dataset.act === "meet" || b.dataset.act === "talk") return onMeet(agentId, b.dataset.act === "talk");
-    if (b.dataset.act === "rerun" && confirm(`Rodar ${b.dataset.label} de novo com este agente?`)) {
-      actRaw(() => api(`/api/issues/${b.dataset.issue}/rerun`, {}), `${b.dataset.label} reenfileirada.`);
+    if (b.dataset.act === "rerun" && confirm(`让此智能体重新运行 ${b.dataset.label}？`)) {
+      actRaw(() => api(`/api/issues/${b.dataset.issue}/rerun`, {}), `${b.dataset.label} 已重新加入队列。`);
     }
   });
 
@@ -80,16 +80,16 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     head.innerHTML = `
       <h2><span>${esc(a.emoji)}</span>${esc(a.name)}</h2>
       <div class="meta"><span class="dot ${a.state}"></span> ${STATE_LABEL[a.state]} · 💻 ${esc(a.machine)} · ${esc(a.provider)}${a.squad ? ` · 👥 ${esc(a.squad)}${a.leader ? "（组长）" : ""}` : ""}</div>
-      <div class="meta">${a.today?.runs ? `⚡ <b>${a.today.runs}</b> execuç${a.today.runs > 1 ? "ões" : "ão"} 今天 · ✅ ${a.today.ok}${a.today.failed ? ` · ❌ ${a.today.failed}` : ""}${a.today.lastAt ? ` · 上次 ${new Date(a.today.lastAt).toLocaleTimeString("zh-CN", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}` : ""}` : "今天尚未执行任务"}${a.review ? ` · 👀 ${a.review} 待审核` : ""}</div>
+      <div class="meta">${a.today?.runs ? `⚡ <b>${a.today.runs}</b> 次今日运行 · ✅ ${a.today.ok}${a.today.failed ? ` · ❌ ${a.today.failed}` : ""}${a.today.lastAt ? ` · 上次 ${new Date(a.today.lastAt).toLocaleTimeString("zh-CN", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}` : ""}` : "今天尚未执行任务"}${a.review ? ` · 👀 ${a.review} 待审核` : ""}</div>
       ${auth.auth ? `<div class="head-actions">
         <button type="button" data-act="talk" title="让两位智能体讨论同一主题">🗣️ 与另一位智能体对话</button>
         <button type="button" data-act="meet" title="让多位智能体协作处理同一任务">🤝 邀请开会</button></div>` : ""}
-      ${a.work.length ? `<div class="section-title">现在${a.work.length > 1 ? ` · ${a.work.filter((w) => !w.queued).length} 项同时运行` : ""}</div>${a.work.map((w) => `<div class="item clickable" data-wrun="${esc(w.id ?? "")}" data-wissue="${esc(w.issue?.id ?? "")}" data-wagent="${esc(a.id)}" title="查看详情">${w.queued ? "🕓" : w.kind === "chat" ? "💬" : w.kind === "autopilot" ? "⏰" : "📋"} ${w.issue ? `<b>${esc(w.issue.identifier)}</b> ${esc(w.issue.title)}${w.issue.project ? ` <small>· 📁 ${esc(w.issue.project)}</small>` : ""}` : esc(w.about || w.label || w.kind)} <small>· ${w.queued ? "排队中" : ago(w.startedAt)}${w.by ? ` · por ${esc(w.by)}` : ""}</small>${w.issue && w.about ? `<div class="sub">📝 ${esc(w.about)}</div>` : ""}${w.now ? `<div class="sub">✍️ ${esc(w.now)}</div>` : ""}</div>`).join("")}` : ""}
-      ${a.blocked.length ? `<div class="section-title">🚧 等待区 (${a.blocked.length} bloqueada${a.blocked.length > 1 ? "s" : ""})</div>${a.blocked
+      ${a.work.length ? `<div class="section-title">现在${a.work.length > 1 ? ` · ${a.work.filter((w) => !w.queued).length} 项同时运行` : ""}</div>${a.work.map((w) => `<div class="item clickable" data-wrun="${esc(w.id ?? "")}" data-wissue="${esc(w.issue?.id ?? "")}" data-wagent="${esc(a.id)}" title="查看详情">${w.queued ? "🕓" : w.kind === "chat" ? "💬" : w.kind === "autopilot" ? "⏰" : "📋"} ${w.issue ? `<b>${esc(w.issue.identifier)}</b> ${esc(w.issue.title)}${w.issue.project ? ` <small>· 📁 ${esc(w.issue.project)}</small>` : ""}` : esc(w.about || w.label || w.kind)} <small>· ${w.queued ? "排队中" : ago(w.startedAt)}${w.by ? ` · 发起人：${ esc(w.by)}` : ""}</small>${w.issue && w.about ? `<div class="sub">📝 ${esc(w.about)}</div>` : ""}${w.now ? `<div class="sub">✍️ ${esc(w.now)}</div>` : ""}</div>`).join("")}` : ""}
+      ${a.blocked.length ? `<div class="section-title">🚧 等待区 (${a.blocked.length} 项受阻)</div>${a.blocked
         .map((b) => `<div class="item pend"><div><b>${esc(b.identifier)}</b> ${esc(b.title)}</div>${auth.auth && b.id ? `<div class="run-actions">
-            <button type="button" class="primary" data-act="issue-status" data-status="done" data-issue="${b.id}" data-label="${esc(b.identifier)}">✅ Concluir</button>
-            <button type="button" data-act="issue-status" data-status="todo" data-issue="${b.id}" data-label="${esc(b.identifier)}">↩️ Voltar para a fila</button>
-            <button type="button" data-act="rerun" data-issue="${b.id}" data-label="${esc(b.identifier)}">🔁 Rodar de novo</button>
+            <button type="button" class="primary" data-act="issue-status" data-status="done" data-issue="${b.id}" data-label="${esc(b.identifier)}">✅ 完成</button>
+            <button type="button" data-act="issue-status" data-status="todo" data-issue="${b.id}" data-label="${esc(b.identifier)}">↩️ 返回队列</button>
+            <button type="button" data-act="rerun" data-issue="${b.id}" data-label="${esc(b.identifier)}">🔁 重新运行</button>
             <button type="button" class="danger" data-act="issue-status" data-status="cancelled" data-issue="${b.id}" data-label="${esc(b.identifier)}">🚫 取消</button></div>` : ""}</div>`)
         .join("")}` : ""}
       ${a.description ? `<p class="desc">${esc(a.description)}</p>` : ""}`;
@@ -98,10 +98,10 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
   /** Botões para uma execução que falhou: resolver a issue ou arquivar a falha. */
   function failActions(runId, issue, acked) {
     const iss = issue
-      ? `<button type="button" class="primary" data-act="issue-status" data-status="done" data-issue="${issue.id}" data-label="${esc(issue.identifier)}">✅ Concluir issue</button>
-         <button type="button" class="danger" data-act="issue-status" data-status="cancelled" data-issue="${issue.id}" data-label="${esc(issue.identifier)}">🚫 取消 issue</button>`
+      ? `<button type="button" class="primary" data-act="issue-status" data-status="done" data-issue="${issue.id}" data-label="${esc(issue.identifier)}">✅ 完成任务</button>
+         <button type="button" class="danger" data-act="issue-status" data-status="cancelled" data-issue="${issue.id}" data-label="${esc(issue.identifier)}">🚫 取消任务</button>`
       : "";
-    return `${iss}<button type="button" data-act="ack" data-run="${runId}" data-ack="${acked ? "0" : "1"}">${acked ? "↩️ Desarquivar falha" : "📦 归档 falha"}</button>`;
+    return `${iss}<button type="button" data-act="ack" data-run="${runId}" data-ack="${acked ? "0" : "1"}">${acked ? "↩️ 取消归档" : "📦 归档失败记录"}</button>`;
   }
 
   const STATUS_MSG = { done: "已完成", cancelled: "已取消", todo: "已返回队列", in_progress: "进行中" };
@@ -109,14 +109,14 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
   function handleFailAction(b) {
     const { act: kind, run, issue, label, status } = b.dataset;
     if (kind === "issue-status") {
-      const verb = { done: "Concluir", cancelled: "取消", todo: "Voltar para a fila" }[status] ?? status;
+      const verb = { done: "完成", cancelled: "取消", todo: "返回队列" }[status] ?? status;
       if (!confirm(`${verb} ${label}?`)) return true;
       actRaw(() => api(`/api/issues/${issue}/status`, { status }), `${label} ${STATUS_MSG[status] ?? status}.`);
       return true;
     }
     if (kind === "ack") {
       const on = b.dataset.ack === "1";
-      actRaw(() => api("/api/acks", { id: run, ack: on }), on ? "Falha arquivada: saiu das 待处理事项s." : "Falha desarquivada.");
+      actRaw(() => api("/api/acks", { id: run, ack: on }), on ? "失败记录已归档。" : "已取消归档。");
       return true;
     }
     return false;
@@ -136,7 +136,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     }
     body.innerHTML = `
       <div class="tabs" role="tablist">
-        ${[["activity", "📜 Atividade"], ["chat", "💬 Conversa"], ["chats", "🗨️ Chats"], ["issues", "📋 Issues"], ["new", "➕ 任务"], ["look", "👕 Visual"], ["config", "⚙️ Configurar"]]
+        ${[["activity", "📜 运行记录"], ["chat", "💬 对话"], ["chats", "🗨️ 对话历史"], ["issues", "📋 任务"], ["new", "➕ 任务"], ["look", "👕 外观"], ["config", "⚙️ 配置"]]
           .map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${tab === k}">${l}</button>`)
           .join("")}
       </div>
@@ -155,7 +155,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
       return;
     }
     if (activity.error) {
-      tb.innerHTML = `<p class="error">${esc(activity.error)}</p><button type="button" data-act="reload">Tentar de novo</button>`;
+      tb.innerHTML = `<p class="error">${esc(activity.error)}</p><button type="button" data-act="reload">重试</button>`;
       return;
     }
     if (tab === "activity") renderActivity(tb);
@@ -165,7 +165,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
   function renderActivity(tb) {
     const runs = activity.runs;
     tb.innerHTML =
-      `<div class="toolbar"><small class="muted">Últimas ${runs.length} runs</small><button type="button" data-act="reload">↻ 刷新</button></div>` +
+      `<div class="toolbar"><small class="muted">最近 ${runs.length} 次运行</small><button type="button" data-act="reload">↻ 刷新</button></div>` +
       (runs.length
         ? runs
             .map((r) => {
@@ -173,20 +173,20 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
               const what = r.issue ? `<b>${esc(r.issue.identifier)}</b> ${esc(r.issue.title)}` : r.kind === "chat" ? `Chat${r.by ? ` com ${esc(r.by)}` : ""}` : esc(r.kind);
               const failed = r.status === "failed";
               return `<div class="run ${live ? "live" : ""} ${failed ? (r.acked ? "acked" : "failed") : ""}" data-run="${r.id}">
-                <div class="run-top"><span class="pill">${RUN_STATUS[r.status] ?? esc(r.status)}${failed && r.acked ? " · 📦 arquivada" : ""}</span><small class="muted">${ago(r.createdAt)} · ${duration(r.startedAt, r.completedAt)}</small></div>
+                <div class="run-top"><span class="pill">${RUN_STATUS[r.status] ?? esc(r.status)}${failed && r.acked ? " · 📦 已归档" : ""}</span><small class="muted">${ago(r.createdAt)} · ${duration(r.startedAt, r.completedAt)}</small></div>
                 <div class="run-what">${what}</div>
                 ${r.error ? `<div class="error small">${esc(r.error)}</div>` : ""}
                 <div class="run-actions">
-                  <button type="button" data-act="steps" data-run="${r.id}">${openRuns.has(r.id) ? "▲ Esconder passos" : "▼ Ver passos"}</button>
+                  <button type="button" data-act="steps" data-run="${r.id}">${openRuns.has(r.id) ? "▲ 收起步骤" : "▼ 查看步骤"}</button>
                   ${live ? `<button type="button" class="danger" data-act="cancel" data-run="${r.id}">⏹ 取消</button>` : ""}
-                  ${r.issue && !live ? `<button type="button" data-act="rerun" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">🔁 Rodar de novo</button>` : ""}
+                  ${r.issue && !live ? `<button type="button" data-act="rerun" data-issue="${r.issue.id}" data-label="${esc(r.issue.identifier)}">🔁 重新运行</button>` : ""}
                   ${failed ? failActions(r.id, r.issue, r.acked) : ""}
                 </div>
                 <div class="steps" ${openRuns.has(r.id) ? "" : "hidden"}></div>
               </div>`;
             })
             .join("")
-        : `<p class="muted">Nenhuma run recente.</p>`);
+        : `<p class="muted">暂无近期运行。</p>`);
     for (const id of openRuns) loadSteps(id);
     // Enquanto houver run ao vivo aberta, atualiza os passos a cada 6 s.
     if (runs.some((r) => openRuns.has(r.id) && ["running", "dispatched", "queued"].includes(r.status))) {
@@ -199,7 +199,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
   async function loadSteps(runId) {
     const box = body.querySelector(`.run[data-run="${runId}"] .steps`);
     if (!box) return;
-    if (!box.innerHTML) box.innerHTML = `<p class="muted">正在加载 passos…</p>`;
+    if (!box.innerHTML) box.innerHTML = `<p class="muted">正在加载步骤…</p>`;
     try {
       const { messages } = await api(`/api/runs/${runId}/messages`);
       const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 10;
@@ -211,11 +211,11 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
                 : m.type === "tool"
                   ? `<div class="step tool">🔧 <b>${esc(m.tool)}</b> <code>${esc(m.text)}</code></div>`
                   : m.type === "result"
-                    ? `<details class="step result"><summary>↳ resultado</summary><pre>${esc(m.text)}</pre></details>`
+                    ? `<details class="step result"><summary>↳ 执行结果</summary><pre>${esc(m.text)}</pre></details>`
                     : "",
             )
             .join("")
-        : `<p class="muted">Sem passos registrados (chats nem sempre guardam mensagens).</p>`;
+        : `<p class="muted">暂无执行步骤。部分对话不会保存消息。</p>`;
       if (atBottom) box.scrollTop = box.scrollHeight;
     } catch (e) {
       box.innerHTML = `<p class="error">${esc(e.message)}</p>`;
@@ -232,15 +232,15 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
               (i) => `<div class="issue" data-issue="${i.id}">
                 <div><b>${esc(i.identifier)}</b> ${esc(i.title)}</div>
                 <div class="issue-actions">
-                  <select data-act="status" data-issue="${i.id}" data-label="${esc(i.identifier)}" aria-label="状态 de ${esc(i.identifier)}">
+                  <select data-act="status" data-issue="${i.id}" data-label="${esc(i.identifier)}" aria-label="${esc(i.identifier)} 的状态">
                     ${Object.entries(ISSUE_STATUS).map(([k, l]) => `<option value="${k}" ${k === i.status ? "selected" : ""}>${l}</option>`).join("")}
                   </select>
-                  <button type="button" data-act="instruct" data-issue="${i.id}">💬 Instruir</button>
-                  <button type="button" data-act="rerun" data-issue="${i.id}" data-label="${esc(i.identifier)}">🔁 Rodar de novo</button>
+                  <button type="button" data-act="instruct" data-issue="${i.id}">💬 发送指令</button>
+                  <button type="button" data-act="rerun" data-issue="${i.id}" data-label="${esc(i.identifier)}">🔁 重新运行</button>
                 </div>
                 <form class="instruct" data-issue="${i.id}" hidden>
-                  <textarea required rows="3" placeholder="O que o agente deve fazer nesta issue?"></textarea>
-                  <button type="submit" class="primary">发送 ao agente</button>
+                  <textarea required rows="3" placeholder="输入这项任务的执行要求。"></textarea>
+                  <button type="submit" class="primary">发送给智能体</button>
                 </form>
               </div>`,
             )
@@ -252,9 +252,9 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     const a = getAgent(agentId);
     tb.innerHTML = `<form class="new-task">
         <label>标题<input name="title" required maxlength="200" placeholder="例如：每周线索报告" /></label>
-        <label>指令<textarea name="prompt" required rows="7" placeholder="Descreva a tarefa para ${esc(a?.name ?? "o agente")}…"></textarea></label>
-        <button type="submit" class="primary wide">🚀 Criar tarefa e iniciar</button>
-        <p class="muted small">Cria uma issue atribuída ao agente; a run começa na hora.</p>
+        <label>指令<textarea name="prompt" required rows="7" placeholder="描述要交给 ${esc(a?.name ?? "智能体")} 的任务…"></textarea></label>
+        <button type="submit" class="primary wide">🚀 创建并启动任务</button>
+        <p class="muted small">创建任务并分配给智能体，随后立即运行。</p>
         <div class="result"></div>
       </form>`;
   }
@@ -319,11 +319,11 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
       else openRuns.add(run);
       return renderActivity(body.querySelector(".tab-body"));
     }
-    if (kind === "cancel" && confirm("取消 esta run? O agente é interrompido na hora.")) {
-      return act(() => api(`/api/runs/${run}/cancel`, {}), "Run 已取消.");
+    if (kind === "cancel" && confirm("取消这次运行？智能体将立即停止。")) {
+      return act(() => api(`/api/runs/${run}/cancel`, {}), "运行已取消。");
     }
-    if (kind === "rerun" && confirm(`Rodar ${label} de novo com este agente?`)) {
-      return act(() => api(`/api/issues/${issue}/rerun`, {}), `${label} reenfileirada.`);
+    if (kind === "rerun" && confirm(`让此智能体重新运行 ${label}？`)) {
+      return act(() => api(`/api/issues/${issue}/rerun`, {}), `${label} 已重新加入队列。`);
     }
     if (kind === "instruct") {
       const f = body.querySelector(`form.instruct[data-issue="${issue}"]`);
@@ -336,7 +336,7 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     const s = e.target.closest('select[data-act="status"]');
     if (!s) return;
     const prev = activity.issues.find((i) => i.id === s.dataset.issue)?.status;
-    if (!confirm(`Mudar ${s.dataset.label} para "${ISSUE_STATUS[s.value]}"?`)) {
+    if (!confirm(`将 ${s.dataset.label} 改为「${ISSUE_STATUS[s.value]}」？`)) {
       s.value = prev;
       return;
     }
@@ -351,13 +351,13 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     try {
       if (f.classList.contains("new-task")) {
         const { issue } = await api(`/api/agents/${agentId}/task`, { title: f.elements.title.value, prompt: f.elements.prompt.value });
-        f.querySelector(".result").innerHTML = `<p class="ok">✅ Criada <b>${esc(issue.identifier)}</b>. O agente já recebeu a tarefa.</p>`;
+        f.querySelector(".result").innerHTML = `<p class="ok">✅ 已创建 <b>${esc(issue.identifier)}</b>，智能体已收到任务。</p>`;
         f.reset();
         activity = null;
       } else if (f.classList.contains("instruct")) {
         const a = getAgent(agentId);
         await api(`/api/issues/${f.dataset.issue}/comment`, { text: f.querySelector("textarea").value, agentId, agentName: a?.name });
-        flash("Instrução enviada; o agente foi acordado.");
+        flash("已发送指令，智能体已启动。");
         f.reset();
         f.hidden = true;
       }
@@ -372,8 +372,8 @@ export function createAgentPanel(el, { getAgent, onClose, onAuthChange, onChange
     const dlg = document.createElement("dialog");
     dlg.className = "login";
     dlg.innerHTML = `<form method="dialog">
-        <h3>🔐 登录 no painel</h3>
-        <input type="password" name="password" autocomplete="current-password" required placeholder="密码 de administrador" />
+        <h3>🔐 登录办公室</h3>
+        <input type="password" name="password" autocomplete="current-password" required placeholder="管理员密码" />
         <p class="error small" hidden></p>
         <div class="row"><button value="cancel" formnovalidate type="submit">取消</button><button class="primary" value="ok" type="submit">登录</button></div>
       </form>`;

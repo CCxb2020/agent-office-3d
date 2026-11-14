@@ -57,8 +57,8 @@ test("atribuir a agente, tirar atribuição só quando pedido e recusar id invá
   await call(m, "POST", `/api/manage/issues/${ISSUE}/assign`, { agentId: AGENT });
   await call(m, "POST", `/api/manage/issues/${ISSUE}/assign`, { agentId: null });
   assert.deepEqual(calls, [`issue assign ${ISSUE} --to-id ${AGENT}`, `issue assign ${ISSUE} --unassign`]);
-  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/assign`, { agentId: "x; rm -rf" }), /Agente inválido/);
-  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/assign`, {}), /Informe o agente/);
+  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/assign`, { agentId: "x; rm -rf" }), /无效的智能体/);
+  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/assign`, {}), /请选择智能体/);
   assert.equal(calls.length, 2);
 });
 
@@ -67,10 +67,10 @@ test("editar título e prazo, recusando valores inválidos", async () => {
   const m = createManage({ multica, redact });
   await call(m, "POST", `/api/manage/issues/${ISSUE}/edit`, { title: " Novo título ", dueDate: "2026-11-01" });
   assert.deepEqual(calls, [`issue update ${ISSUE} --title Novo título --due-date 2026-11-01`]);
-  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/edit`, { dueDate: "" }), /Prazo inválido/);
-  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/edit`, { dueDate: "amanhã" }), /Prazo inválido/);
-  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/edit`, { title: "  " }), /Título vazio/);
-  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/edit`, {}), /Nada para alterar/);
+  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/edit`, { dueDate: "" }), /截止日期无效/);
+  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/edit`, { dueDate: "amanhã" }), /截止日期无效/);
+  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/edit`, { title: "  " }), /标题为空或过长/);
+  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/edit`, {}), /没有可更新的字段/);
 });
 
 test("prioridade só aceita valores conhecidos", async () => {
@@ -78,7 +78,7 @@ test("prioridade só aceita valores conhecidos", async () => {
   const m = createManage({ multica, redact });
   await call(m, "POST", `/api/manage/issues/${ISSUE}/priority`, { priority: "high" });
   assert.deepEqual(calls, [`issue update ${ISSUE} --priority high`]);
-  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/priority`, { priority: "máxima" }), /Prioridade inválida/);
+  await assert.rejects(call(m, "POST", `/api/manage/issues/${ISSUE}/priority`, { priority: "máxima" }), /无效的优先级/);
 });
 
 test("status em lote: separa sucessos e falhas, ignora ids inválidos e limita a 50", async () => {
@@ -87,9 +87,9 @@ test("status em lote: separa sucessos e falhas, ignora ids inválidos e limita a
   const r = await call(m, "POST", "/api/manage/bulk-status", { ids: ["TASK-1", "TASK-2", "TASK-1", "lixo"], status: "done" });
   assert.deepEqual(r.body, { ok: ["TASK-1"], failed: ["TASK-2"] });
   assert.equal(calls.length, 2);
-  await assert.rejects(call(m, "POST", "/api/manage/bulk-status", { ids: ["TASK-1"], status: "feito" }), /Status inválido/);
-  await assert.rejects(call(m, "POST", "/api/manage/bulk-status", { ids: 7, status: "done" }), /Nenhuma issue/);
-  await assert.rejects(call(m, "POST", "/api/manage/bulk-status", { ids: Array.from({ length: 51 }, (_, i) => `TASK-${i + 1}`), status: "done" }), /No máximo 50/);
+  await assert.rejects(call(m, "POST", "/api/manage/bulk-status", { ids: ["TASK-1"], status: "feito" }), /无效的状态/);
+  await assert.rejects(call(m, "POST", "/api/manage/bulk-status", { ids: 7, status: "done" }), /请选择至少一项任务/);
+  await assert.rejects(call(m, "POST", "/api/manage/bulk-status", { ids: Array.from({ length: 51 }, (_, i) => `TASK-${i + 1}`), status: "done" }), /每次最多处理 50/);
 });
 
 test("busca exige 2 letras e inclui concluídas", async () => {
@@ -98,8 +98,8 @@ test("busca exige 2 letras e inclui concluídas", async () => {
   const r = await call(m, "GET", "/api/manage/search?q=zoho");
   assert.equal(r.body.issues[0].match, "comment");
   assert.match(calls[0], /--include-closed/);
-  await assert.rejects(call(m, "GET", "/api/manage/search?q=z"), /2 letras/);
-  await assert.rejects(call(m, "GET", "/api/manage/search?q=--help"), /não pode começar/);
+  await assert.rejects(call(m, "GET", "/api/manage/search?q=z"), /至少 2 个字符/);
+  await assert.rejects(call(m, "GET", "/api/manage/search?q=--help"), /搜索词不能以/);
   assert.equal(calls.length, 1);
 });
 

@@ -19,7 +19,7 @@ export const STATUS = { backlog: "待安排", todo: "待办", in_progress: "进�
 const PRIORITY = { none: "无优先级", low: "低", medium: "中", high: "高", urgent: "紧急" };
 const LIVE = new Set(["queued", "dispatched", "running", "waiting_local_directory", "pending"]);
 const RUN_LABEL = { completed: "✅ 已完成", failed: "❌ 失败", cancelled: "⏹ 已取消", running: "⏳ 运行中", dispatched: "⏳ 正在启动", queued: "🕓 排队中" };
-const ACTION = { created: "criou", status_changed: "mudou o status", assignee_changed: "mudou o responsável", priority_changed: "mudou a prioridade", title_changed: "mudou o título", description_changed: "editou a descrição" };
+const ACTION = { created: "创建了任务", status_changed: "修改了状态", assignee_changed: "修改了负责人", priority_changed: "修改了优先级", title_changed: "修改了标题", description_changed: "编辑了描述" };
 
 export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () => {} }) {
   let ref = null; // id ou identificador da issue aberta
@@ -32,7 +32,7 @@ export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () 
   const agentOf = (id) => getData()?.agents.find((a) => a.id === id);
   const agentName = (id) => {
     const a = agentOf(id);
-    return a ? `${a.emoji} ${a.name}` : "agente";
+    return a ? `${a.emoji} ${a.name}` : "智能体";
   };
 
   async function open(issueRef) {
@@ -79,8 +79,8 @@ export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () 
 
   const steps = (runId) => {
     const list = openSteps.get(runId);
-    if (!list) return `<p class="muted">⏳ 正在加载 passos…</p>`;
-    if (!list.length) return `<p class="muted">Sem passos registrados.</p>`;
+    if (!list) return `<p class="muted">⏳ 正在加载步骤…</p>`;
+    if (!list.length) return `<p class="muted">暂无执行步骤。</p>`;
     return `<div class="m-steps">${list
       .map((m) =>
         m.type === "text" ? `<div class="m-step text">${esc(m.text)}</div>`
@@ -93,14 +93,14 @@ export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () 
   function render() {
     if (run) {
       el.innerHTML = `<button class="close" type="button" data-m="close" aria-label="关闭">✕</button>
-        <div class="m-head"><h2>${run.kind === "chat" ? "💬 Chat" : "▶️ Execução"} · ${esc(agentName(run.agentId))}</h2>
-          <div class="muted">${esc(when(run.createdAt))}${run.by ? ` · por ${esc(run.by)}` : ""} · ${esc(RUN_LABEL[run.status] ?? run.status)}</div>
-          ${run.about ? `<div class="m-ctx"><b>📝 Do que se trata</b>${esc(run.about)}</div>` : ""}
+        <div class="m-head"><h2>${run.kind === "chat" ? "💬 Chat" : "▶️ 运行"} · ${esc(agentName(run.agentId))}</h2>
+          <div class="muted">${esc(when(run.createdAt))}${run.by ? ` · 发起人：${ esc(run.by)}` : ""} · ${esc(RUN_LABEL[run.status] ?? run.status)}</div>
+          ${run.about ? `<div class="m-ctx"><b>📝 任务说明</b>${esc(run.about)}</div>` : ""}
           ${run.now ? `<div class="m-ctx"><b>✍️ 现在</b>${esc(run.now)}</div>` : ""}
-          <p class="muted small">Chats do Multica são só leitura aqui (a CLI não responde em chats de outras pessoas). Para continuar, use “💬 Conversa” no painel do agente.</p>
-          <div class="m-actions">${LIVE.has(run.status) ? `<button type="button" class="danger" data-m="cancel-run" data-run="${esc(run.id)}">⏹ 取消 execução</button>` : ""}
-            <button type="button" data-m="agent" data-agent="${esc(run.agentId)}">Abrir agente</button>
-            <button type="button" data-m="run-reload">↻ 刷新 passos</button></div></div>
+          <p class="muted small">此处可查看 Multica 对话。要发送消息，请使用智能体面板的「对话」。</p>
+          <div class="m-actions">${LIVE.has(run.status) ? `<button type="button" class="danger" data-m="cancel-run" data-run="${esc(run.id)}">⏹ 取消运行</button>` : ""}
+            <button type="button" data-m="agent" data-agent="${esc(run.agentId)}">打开智能体</button>
+            <button type="button" data-m="run-reload">↻ 刷新执行步骤</button></div></div>
         <div class="m-body">${steps(run.id)}</div>`;
       return;
     }
@@ -116,18 +116,18 @@ export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () 
     const live = runs.find((r) => LIVE.has(r.status));
     const opts = (map, cur) => Object.entries(map).map(([k, v]) => `<option value="${k}" ${k === cur ? "selected" : ""}>${esc(v)}</option>`).join("");
     const assigneeOpts =
-      `<option value="">— sem responsável —</option>` +
-      (i.assigneeType && i.assigneeType !== "agent" ? `<option value="__keep" selected>👤 membro/squad (atual)</option>` : "") +
+      `<option value="">— 未分配 —</option>` +
+      (i.assigneeType && i.assigneeType !== "agent" ? `<option value="__keep" selected>👤 当前成员或小队</option>` : "") +
       agents().map((a) => `<option value="${esc(a.id)}" ${a.id === i.assignee ? "selected" : ""}>${esc(a.emoji)} ${esc(a.name)}</option>`).join("");
-    const tabs = [["comments", `💬 评论 (${comments.length})`], ["runs", `⏱️ 运行记录 (${runs.length})`], ["timeline", "🕓 Linha do tempo"], ["desc", "📄 描述"]];
+    const tabs = [["comments", `💬 评论 (${comments.length})`], ["runs", `⏱️ 运行记录 (${runs.length})`], ["timeline", "🕓 时间线"], ["desc", "📄 描述"]];
     let body = "";
     if (tab === "comments") {
       body = (comments.length
-        ? comments.map((c) => `<div class="m-comment ${c.authorType === "agent" ? "agent" : "member"}"><div class="m-meta">${c.authorType === "agent" ? esc(agentName(c.author)) : "👤 membro"} · ${esc(when(c.at))}</div><div class="m-text">${esc(c.text)}</div></div>`).join("")
-        : `<p class="muted">Sem comentários.</p>`) +
+        ? comments.map((c) => `<div class="m-comment ${c.authorType === "agent" ? "agent" : "member"}"><div class="m-meta">${c.authorType === "agent" ? esc(agentName(c.author)) : "👤 成员"} · ${esc(when(c.at))}</div><div class="m-text">${esc(c.text)}</div></div>`).join("")
+        : `<p class="muted">暂无评论。</p>`) +
         `<div class="m-reply"><textarea name="text" rows="3" placeholder="输入评论或指令…"></textarea>
-          <label class="m-check"><input type="checkbox" name="wake" ${i.assignee ? "checked" : ""} ${i.assignee ? "" : "disabled"} /> chamar ${i.assignee ? esc(agentName(i.assignee)) : "o responsável"} (menção acorda o agente)</label>
-          <button type="button" class="primary" data-m="comment">💬 Comentar</button></div>`;
+          <label class="m-check"><input type="checkbox" name="wake" ${i.assignee ? "checked" : ""} ${i.assignee ? "" : "disabled"} /> 提及并启动 ${i.assignee ? esc(agentName(i.assignee)) : "负责人"}</label>
+          <button type="button" class="primary" data-m="comment">💬 发表评论</button></div>`;
     } else if (tab === "runs") {
       body = runs.length
         ? runs.map((r) => `<div class="m-run"><div class="m-run-head">
@@ -135,32 +135,32 @@ export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () 
             <small class="muted">${esc(when(r.createdAt))}${r.completedAt ? ` · ${dur(r.startedAt ?? r.createdAt, r.completedAt)}` : ""}</small></div>
             ${r.trigger ? `<small class="muted">${esc(r.trigger)}</small>` : ""}
             ${r.error ? `<small class="h-err">${esc(r.error)}</small>` : ""}
-            <div class="m-actions"><button type="button" data-m="steps" data-run="${esc(r.id)}">${openSteps.has(r.id) ? "▲ Esconder passos" : "▼ Ver passos"}</button>
+            <div class="m-actions"><button type="button" data-m="steps" data-run="${esc(r.id)}">${openSteps.has(r.id) ? "▲ 收起步骤" : "▼ 查看步骤"}</button>
               ${LIVE.has(r.status) ? `<button type="button" class="danger" data-m="cancel-run" data-run="${esc(r.id)}">⏹ 取消</button>` : ""}</div>
             ${openSteps.has(r.id) ? steps(r.id) : ""}</div>`).join("")
-        : `<p class="muted">Nenhuma execução.</p>`;
+        : `<p class="muted">暂无运行记录。</p>`;
     } else if (tab === "timeline") {
       body = timeline.length
         ? `<ul class="m-timeline">${timeline.map((e) => `<li><small>${esc(when(e.at))}</small> <b>${esc(e.actor)}</b> ${esc(ACTION[e.action] ?? e.action)}${e.to ? ` → ${esc(STATUS[e.to] ?? e.to)}` : ""}</li>`).join("")}</ul>`
-        : `<p class="muted">Sem eventos.</p>`;
-    } else body = `<div class="m-desc">${esc(i.description) || '<span class="muted">Sem descrição.</span>'}</div>`;
+        : `<p class="muted">暂无事件。</p>`;
+    } else body = `<div class="m-desc">${esc(i.description) || '<span class="muted">暂无描述。</span>'}</div>`;
 
     el.innerHTML = `<button class="close" type="button" data-m="close" aria-label="关闭">✕</button>
       <div class="m-head">
-        <h2><span class="m-id">${esc(i.identifier)}</span> ${esc(i.title)} <button type="button" class="m-edit" data-m="title" title="编辑 título">✏️</button></h2>
+        <h2><span class="m-id">${esc(i.identifier)}</span> ${esc(i.title)} <button type="button" class="m-edit" data-m="title" title="编辑标题">✏️</button></h2>
         <div class="muted small">criada ${esc(when(i.createdAt))} · atualizada ${esc(when(i.updatedAt))}${usage ? ` · ${usage.runs} 次运行 · ${fmtK(usage.input + usage.cacheRead)} tokens lidos, ${fmtK(usage.output)} escritos` : ""}</div>
         <div class="m-fields">
           <label>状态<select data-m="status">${opts(STATUS, i.status)}</select></label>
           <label>优先级<select data-m="priority">${opts(PRIORITY, i.priority)}</select></label>
           <label>负责人<select data-m="assign">${assigneeOpts}</select></label>
-          <label>Prazo<input type="date" data-m="due" value="${esc((i.dueDate ?? "").slice(0, 10))}" /></label>
+          <label>截止日期<input type="date" data-m="due" value="${esc((i.dueDate ?? "").slice(0, 10))}" /></label>
         </div>
         <div class="m-actions">
-          ${i.assigneeType === "agent" ? `<button type="button" data-m="rerun">🔁 Rodar de novo</button>` : ""}
-          ${live ? `<button type="button" class="danger" data-m="cancel-run" data-run="${esc(live.id)}">⏹ 取消 execução 进行中</button>` : ""}
-          ${i.status !== "done" ? `<button type="button" class="primary" data-m="set" data-status="done">✅ Concluir</button>` : ""}
-          ${i.status !== "cancelled" ? `<button type="button" class="danger" data-m="set" data-status="cancelled">🚫 取消 issue</button>` : ""}
-          ${i.assignee && agentOf(i.assignee) ? `<button type="button" data-m="agent" data-agent="${esc(i.assignee)}">Abrir agente</button>` : ""}
+          ${i.assigneeType === "agent" ? `<button type="button" data-m="rerun">🔁 重新运行</button>` : ""}
+          ${live ? `<button type="button" class="danger" data-m="cancel-run" data-run="${esc(live.id)}">⏹ 取消当前运行</button>` : ""}
+          ${i.status !== "done" ? `<button type="button" class="primary" data-m="set" data-status="done">✅ 完成</button>` : ""}
+          ${i.status !== "cancelled" ? `<button type="button" class="danger" data-m="set" data-status="cancelled">🚫 取消任务</button>` : ""}
+          ${i.assignee && agentOf(i.assignee) ? `<button type="button" data-m="agent" data-agent="${esc(i.assignee)}">打开智能体</button>` : ""}
           <button type="button" data-m="reload">↻</button>
         </div>
       </div>
@@ -196,7 +196,7 @@ export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () 
     }
     if (d.m === "comment") return comment();
     if (d.m === "title") {
-      const t = prompt("Novo título:", detail.issue.title);
+      const t = prompt("新标题：", detail.issue.title);
       if (t == null || !t.trim() || t.trim() === detail.issue.title) return;
       return act(() => api(`/api/manage/issues/${detail.issue.id}/edit`, { title: t.trim() }), "标题 atualizado.");
     }
@@ -211,13 +211,13 @@ export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () 
       return render();
     }
     const id = detail?.issue?.id;
-    if (d.m === "cancel-run" && confirm("取消 esta execução? O agente é interrompido.")) {
-      return act(() => api(`/api/runs/${encodeURIComponent(d.run)}/cancel`, {}), "Execução 已取消.").then(() => run && openRun({ ...run, status: "cancelled" }));
+    if (d.m === "cancel-run" && confirm("取消这次运行？智能体将停止。")) {
+      return act(() => api(`/api/runs/${encodeURIComponent(d.run)}/cancel`, {}), "运行已取消。").then(() => run && openRun({ ...run, status: "cancelled" }));
     }
-    if (d.m === "rerun" && confirm(`Rodar ${detail.issue.identifier} de novo com ${agentName(detail.issue.assignee)}?`)) {
+    if (d.m === "rerun" && confirm(`让 ${agentName(detail.issue.assignee)} 重新运行 ${detail.issue.identifier}？`)) {
       return act(() => api(`/api/issues/${id}/rerun`, {}), "Reenfileirada.");
     }
-    if (d.m === "set" && confirm(`${d.status === "done" ? "Concluir" : "取消"} ${detail.issue.identifier}?`)) {
+    if (d.m === "set" && confirm(`${d.status === "done" ? "完成" : "取消"} ${detail.issue.identifier}?`)) {
       return act(() => api(`/api/issues/${id}/status`, { status: d.status }), d.status === "done" ? "Issue 已完成." : "Issue 已取消.");
     }
   });
@@ -225,18 +225,18 @@ export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () 
   el.addEventListener("change", (e) => {
     const s = e.target.closest("select[data-m], input[data-m]");
     if (!s || !detail?.issue) return;
-    if (s.dataset.m === "due" && !s.value) return toast("Para remover o prazo, use o Multica.", false), render();
+    if (s.dataset.m === "due" && !s.value) return toast("请在 Multica 中清除截止日期。", false), render();
     if (s.dataset.m === "due") return act(() => api(`/api/manage/issues/${detail.issue.id}/edit`, { dueDate: s.value }), s.value ? `Prazo: ${s.value.split("-").reverse().join("/")}.` : "Prazo removido.");
     const id = detail.issue.id;
     if (s.dataset.m === "status") {
-      if (["done", "cancelled"].includes(s.value) && !confirm(`Mudar ${detail.issue.identifier} para “${STATUS[s.value]}”?`)) return render();
+      if (["done", "cancelled"].includes(s.value) && !confirm(`将 ${detail.issue.identifier} 改为「${STATUS[s.value]}」？`)) return render();
       return act(() => api(`/api/issues/${id}/status`, { status: s.value }), `状态: ${STATUS[s.value]}.`);
     }
     if (s.dataset.m === "priority") return act(() => api(`/api/manage/issues/${id}/priority`, { priority: s.value }), `优先级: ${PRIORITY[s.value]}.`);
     if (s.dataset.m === "assign" && s.value !== "__keep") {
-      const label = s.value ? agentName(s.value) : "ninguém";
-      if (!confirm(`Atribuir ${detail.issue.identifier} a ${label}?${s.value ? " Isso pode iniciar uma execução." : ""}`)) return render();
-      return act(() => api(`/api/manage/issues/${id}/assign`, { agentId: s.value || null }), `Atribuída a ${label}.`);
+      const label = s.value ? agentName(s.value) : "未分配";
+      if (!confirm(`将 ${detail.issue.identifier} 的负责人设为「${label}」？${s.value ? "这可能会启动一次运行。" : ""}`)) return render();
+      return act(() => api(`/api/manage/issues/${id}/assign`, { agentId: s.value || null }), `负责人已设为「${label}」。`);
     }
   });
 
@@ -246,7 +246,7 @@ export function createIssueDrawer(el, { getData, toast, onAgent, onChanged = () 
     if (!text) return box.focus();
     const i = detail.issue;
     const wake = el.querySelector(".m-reply [name=wake]")?.checked && i.assignee;
-    act(() => api(`/api/issues/${i.id}/comment`, { text, ...(wake ? { agentId: i.assignee, agentName: agentOf(i.assignee)?.name ?? "agente" } : {}) }), wake ? "评论 enviado e agente chamado." : "评论 enviado.");
+    act(() => api(`/api/issues/${i.id}/comment`, { text, ...(wake ? { agentId: i.assignee, agentName: agentOf(i.assignee)?.name ?? "智能体" } : {}) }), wake ? "评论已发送，智能体已启动。" : "评论已发送。");
   }
 
   document.addEventListener("keydown", (e) => {
